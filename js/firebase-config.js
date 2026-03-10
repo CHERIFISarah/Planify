@@ -1,15 +1,14 @@
 // ═══════════════════════════════════════════════════════
 //  PLANIFY — Firebase Config · Auth · Firestore Sync
 // ═══════════════════════════════════════════════════════
-// !! Remplace ces valeurs par ta config Firebase !!
-// (Paramètres projet → Tes applications → Config)
 const FIREBASE_CONFIG = {
-  apiKey:            "VOTRE_API_KEY",
-  authDomain:        "VOTRE_PROJECT_ID.firebaseapp.com",
-  projectId:         "VOTRE_PROJECT_ID",
-  storageBucket:     "VOTRE_PROJECT_ID.appspot.com",
-  messagingSenderId: "VOTRE_SENDER_ID",
-  appId:             "VOTRE_APP_ID"
+  apiKey:            "AIzaSyBuCCCUNYz6BtihwwEsMYJ2jZsWdI_IBDE",
+  authDomain:        "planify-98749.firebaseapp.com",
+  projectId:         "planify-98749",
+  storageBucket:     "planify-98749.firebasestorage.app",
+  messagingSenderId: "814814241699",
+  appId:             "1:814814241699:web:51e8cd492565c2afb9f016",
+  measurementId:     "G-0DVMRT0GFN"
 };
 
 // ── Init ──────────────────────────────────────────────
