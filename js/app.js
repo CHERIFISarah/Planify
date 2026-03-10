@@ -29,9 +29,11 @@ function go(page, params = {}) {
   const fab  = document.getElementById('fab');
   if (!view) return;
 
-  // Nav visible uniquement pour les pages principales
+  // Nav visible uniquement pour les pages principales (cachée pendant onboarding)
   const mainPages = ['dashboard','notes','calendar','wellness','tasks'];
-  if (nav) nav.style.display = mainPages.includes(page) ? '' : '';
+  const hideNav   = ['onboarding','editor','settings','subject','list'];
+  if (nav) nav.style.display = hideNav.includes(page) ? 'none' : '';
+  if (fab) fab.style.display = hideNav.includes(page) ? 'none' : '';
 
   // Éditeur overlay → géré séparément
   if (page === 'editor') {
@@ -52,6 +54,7 @@ function go(page, params = {}) {
     case 'tasks':     html = viewTasks();      break;
     case 'list':      html = viewList();       break;
     case 'settings':  html = viewSettings();   break;
+    case 'onboarding': html = viewOnboarding(); break;
     default:          html = viewDashboard();
   }
   view.innerHTML = html;
@@ -1237,6 +1240,17 @@ document.addEventListener('DOMContentLoaded', () => {
   // Notifications (eau + agenda)
   initNotifications();
 
+  // ── Premier lancement → onboarding ──────────────────
+  if (!cfg.name) {
+    // Cache la nav et le FAB pendant l'onboarding
+    const nav = document.getElementById('nav');
+    const fab = document.getElementById('fab');
+    if (nav) nav.style.display = 'none';
+    if (fab) fab.style.display = 'none';
+    go('onboarding');
+    return;
+  }
+
   // Navigation par URL hash (optionnel)
   const hash = location.hash.slice(1) || 'dashboard';
   go(hash);
@@ -1247,6 +1261,115 @@ document.addEventListener('DOMContentLoaded', () => {
     go(h);
   });
 });
+
+// ═══════════════════════════════════════════════════════
+//  ONBOARDING — Écran de bienvenue (1er lancement)
+// ═══════════════════════════════════════════════════════
+
+function viewOnboarding() {
+  const avatars = ['🌸','💫','🌙','🎀','🌺','💕','✨','🦋','🌼','🍀','🎵','💎'];
+  return `
+<div class="ob-wrap">
+
+  <!-- Logo -->
+  <div class="ob-logo">
+    <img src="icon.svg" class="ob-icon" alt="Planify">
+  </div>
+
+  <!-- Titre -->
+  <div class="ob-hero">
+    <h1 class="ob-title">Bienvenue sur<br>Planify</h1>
+    <p class="ob-sub">Ton espace personnel pour noter, planifier<br>et prendre soin de toi 🌸</p>
+    <p class="ob-sub-ar">مرحباً بكِ — مساحتكِ الشخصية</p>
+  </div>
+
+  <!-- Prénom -->
+  <div class="ob-section">
+    <label class="ob-label">Comment tu t'appelles ?</label>
+    <input id="ob-name"
+           class="ob-input"
+           type="text"
+           placeholder="Ton prénom…"
+           maxlength="24"
+           autocomplete="given-name"
+           oninput="obPreview(this.value)">
+  </div>
+
+  <!-- Avatar emoji -->
+  <div class="ob-section">
+    <label class="ob-label">Choisis ton emoji ✨</label>
+    <div class="ob-avatars">
+      ${avatars.map((e,i) => `
+        <button class="ob-av ${i===0?'ob-av-sel':''}"
+                onclick="obSelectAv(this,'${e}')"
+                data-emoji="${e}">${e}</button>
+      `).join('')}
+    </div>
+  </div>
+
+  <!-- Bouton -->
+  <button class="ob-btn" id="ob-start" onclick="finishOnboarding()" disabled>
+    <span id="ob-btn-txt">Entre ton prénom d'abord</span>
+    <span class="ob-btn-arrow">→</span>
+  </button>
+
+  <!-- Petit texte -->
+  <p class="ob-privacy">Tes données restent sur ton appareil · 100% privé 💕</p>
+
+</div>`;
+}
+
+// Sélectionner un avatar
+function obSelectAv(btn, emoji) {
+  document.querySelectorAll('.ob-av').forEach(b => b.classList.remove('ob-av-sel'));
+  btn.classList.add('ob-av-sel');
+  window._obEmoji = emoji;
+}
+
+// Aperçu live du bouton
+function obPreview(val) {
+  const btn = document.getElementById('ob-start');
+  const txt = document.getElementById('ob-btn-txt');
+  if (val.trim().length > 0) {
+    btn.disabled = false;
+    txt.textContent = `Commencer, ${cap(val.trim())} !`;
+  } else {
+    btn.disabled = true;
+    txt.textContent = "Entre ton prénom d'abord";
+  }
+}
+
+// Valider et lancer l'app
+function finishOnboarding() {
+  const nameInput = document.getElementById('ob-name');
+  const name = nameInput ? nameInput.value.trim() : '';
+  if (!name) return;
+
+  const emoji = window._obEmoji || '🌸';
+
+  // Sauvegarder dans la config
+  const cfg = LS.cfg();
+  cfg.name  = cap(name);
+  cfg.emoji = emoji;
+  LS.s('pl_cfg', cfg);
+
+  // Animation de sortie
+  const wrap = document.querySelector('.ob-wrap');
+  if (wrap) {
+    wrap.style.transition = 'opacity .4s ease, transform .4s ease';
+    wrap.style.opacity    = '0';
+    wrap.style.transform  = 'scale(1.04)';
+  }
+
+  setTimeout(() => {
+    // Afficher nav + FAB
+    const nav = document.getElementById('nav');
+    const fab = document.getElementById('fab');
+    if (nav) nav.style.display = '';
+    if (fab) fab.style.display = '';
+    go('dashboard');
+  }, 420);
+}
 
 // Sync hash avec la navigation
 const _origGo = go;

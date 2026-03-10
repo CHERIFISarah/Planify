@@ -2073,3 +2073,92 @@ body .btn, body .fab, body .ni svg, body .card-tap { transition: all .25s cubic-
 @media(prefers-reduced-motion:reduce){
   *{animation-duration:.01ms!important;transition-duration:.01ms!important}
 }
+
+/* ══════════════════════════════════════════════════════════
+   ONBOARDING — Écran de bienvenue premium
+══════════════════════════════════════════════════════════ */
+.ob-wrap {
+  min-height: 100dvh;
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 1.6rem;
+  padding: 2.5rem 1.6rem 3rem;
+  background: linear-gradient(160deg,#1C0A12 0%,#2D1020 40%,#1A0C1A 100%);
+  animation: obIn .55s cubic-bezier(.22,1,.36,1) both;
+  position: relative; overflow: hidden;
+}
+.ob-wrap::before {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background:
+    radial-gradient(ellipse 70% 50% at 90%  5%, rgba(196,119,142,.28) 0%,transparent 60%),
+    radial-gradient(ellipse 60% 40% at 10% 90%, rgba(122,46,80,.30)   0%,transparent 60%),
+    radial-gradient(ellipse 50% 35% at 50% 50%, rgba(80,20,40,.20)    0%,transparent 60%);
+}
+@keyframes obIn {
+  from { opacity:0; transform:translateY(24px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+.ob-icon {
+  width:96px; height:96px; border-radius:22px;
+  box-shadow:0 16px 48px rgba(0,0,0,.55),0 4px 14px rgba(196,119,142,.35);
+  animation:obIconPop .6s .15s cubic-bezier(.34,1.56,.64,1) both;
+}
+@keyframes obIconPop {
+  from { opacity:0; transform:scale(.7); }
+  to   { opacity:1; transform:scale(1); }
+}
+.ob-hero { text-align:center; position:relative; z-index:1; }
+.ob-title {
+  font-family:'Playfair Display',serif; font-size:2.4rem; font-weight:700;
+  line-height:1.15; margin-bottom:.6rem;
+  background:linear-gradient(135deg,#fff 0%,#F9C8D9 60%,#C4778E 100%);
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+}
+.ob-sub    { color:rgba(255,220,235,.75); font-size:.92rem; line-height:1.65; }
+.ob-sub-ar { color:rgba(201,169,110,.65); font-size:.8rem; direction:rtl; margin-top:.3rem; font-style:italic; }
+
+.ob-section { width:100%; max-width:340px; position:relative; z-index:1; }
+.ob-label {
+  display:block; font-size:.75rem; font-weight:800;
+  color:rgba(192,160,178,.8); text-transform:uppercase;
+  letter-spacing:.08em; margin-bottom:.55rem;
+}
+.ob-input {
+  width:100%; padding:.9rem 1.2rem; border-radius:var(--r);
+  background:rgba(45,16,30,.8); border:1.5px solid rgba(196,119,142,.25);
+  color:#fff; font-size:1.05rem; font-family:inherit; outline:none;
+  transition:border-color .2s,box-shadow .2s,background .2s;
+}
+.ob-input::placeholder { color:rgba(192,160,178,.45); }
+.ob-input:focus {
+  border-color:rgba(196,119,142,.65); background:rgba(55,22,38,.9);
+  box-shadow:0 0 0 3px rgba(196,119,142,.18);
+}
+.ob-avatars { display:grid; grid-template-columns:repeat(6,1fr); gap:.5rem; }
+.ob-av {
+  aspect-ratio:1; border-radius:var(--rr);
+  background:rgba(45,16,30,.7); border:1.5px solid rgba(196,119,142,.15);
+  font-size:1.35rem; display:flex; align-items:center; justify-content:center;
+  cursor:pointer; transition:all .2s cubic-bezier(.22,1,.36,1);
+}
+.ob-av:hover { background:rgba(65,25,45,.9); transform:scale(1.1); }
+.ob-av-sel {
+  background:rgba(196,119,142,.25) !important;
+  border-color:var(--rose) !important;
+  box-shadow:0 0 0 2px rgba(196,119,142,.35),0 4px 12px rgba(196,119,142,.25);
+  transform:scale(1.12);
+}
+.ob-btn {
+  width:100%; max-width:340px; padding:1rem 1.5rem;
+  border-radius:var(--rf); background:var(--grad-rose);
+  color:#fff; font-size:1rem; font-weight:800; letter-spacing:.02em;
+  display:flex; align-items:center; justify-content:center; gap:.6rem;
+  box-shadow:var(--sh-rose),0 8px 28px rgba(196,119,142,.4);
+  transition:all .28s cubic-bezier(.22,1,.36,1);
+  position:relative; z-index:1; cursor:pointer;
+}
+.ob-btn:not(:disabled):hover { transform:translateY(-2px); box-shadow:0 12px 36px rgba(196,119,142,.55); }
+.ob-btn:not(:disabled):active { transform:scale(.97); }
+.ob-btn:disabled { background:rgba(80,40,55,.6); box-shadow:none; color:rgba(255,255,255,.4); cursor:not-allowed; }
+.ob-btn-arrow { font-size:1.2rem; transition:transform .2s; }
+.ob-btn:not(:disabled):hover .ob-btn-arrow { transform:translateX(4px); }
+.ob-privacy { color:rgba(192,160,178,.4); font-size:.72rem; text-align:center; position:relative; z-index:1; }
