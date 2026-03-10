@@ -2190,8 +2190,16 @@ body .btn, body .fab, body .ni svg, body .card-tap { transition: all .25s cubic-
 .auth-form-hide { display:none !important; }
 .auth-err {
   min-height:1.2em; font-size:.82rem; font-weight:600;
-  color:#FDA4AF; text-align:center;
+  color:#FDA4AF; text-align:center; line-height:1.5;
 }
+.auth-err-ok { color:#86efac !important; }
+.auth-resend-btn {
+  margin-top:.45rem; padding:.3rem .9rem; border-radius:20px;
+  background:rgba(255,255,255,.13); border:1.5px solid rgba(255,255,255,.22);
+  color:rgba(255,255,255,.88); font-size:.78rem; font-weight:700; font-family:inherit;
+  cursor:pointer; transition:background .18s;
+}
+.auth-resend-btn:hover { background:rgba(255,255,255,.22); }
 .auth-or {
   display:flex; align-items:center; gap:.8rem;
   width:100%; max-width:340px;

@@ -1247,6 +1247,13 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
+    // Bloque les comptes email non vérifiés (Google est toujours vérifié)
+    const isEmailPass = user.providerData.some(p => p.providerId === 'password');
+    if (isEmailPass && !user.emailVerified) {
+      await auth.signOut(); // déclenche à nouveau onAuthStateChanged avec null → go('auth')
+      return;
+    }
+
     // Charge les données Firestore dans localStorage
     await FB.loadAll(user.uid);
 
@@ -1476,12 +1483,38 @@ async function authLogin() {
   const pass  = document.getElementById('auth-pass-l')?.value;
   const err   = document.getElementById('auth-err-l');
   if (!email || !pass) { if (err) err.textContent = 'Remplis tous les champs.'; return; }
-  if (err) err.textContent = '⏳';
+  if (err) { err.className = 'auth-err'; err.textContent = '⏳'; }
   try {
     await FB.signIn(email, pass);
+    const user = auth.currentUser;
+    // Vérifie que l'email est bien confirmé
+    if (user && !user.emailVerified) {
+      await auth.signOut();
+      if (err) {
+        err.className = 'auth-err';
+        err.innerHTML = '📧 Email non vérifié. Vérifie ta boîte mail !'
+          + '<br><button class="auth-resend-btn" onclick="authResendVerification()">Renvoyer l\'email</button>';
+      }
+      return;
+    }
     // auth.onAuthStateChanged prend le relais
   } catch (e) {
-    if (err) err.textContent = authErrMsg(e.code);
+    if (err) { err.className = 'auth-err'; err.textContent = authErrMsg(e.code); }
+  }
+}
+
+async function authResendVerification() {
+  const email = document.getElementById('auth-email-l')?.value?.trim();
+  const pass  = document.getElementById('auth-pass-l')?.value;
+  const err   = document.getElementById('auth-err-l');
+  if (!email || !pass) { if (err) err.textContent = 'Remplis email et mot de passe d\'abord.'; return; }
+  try {
+    const cred = await FB.signIn(email, pass);
+    await cred.user.sendEmailVerification();
+    await auth.signOut();
+    if (err) { err.className = 'auth-err auth-err-ok'; err.textContent = '✅ Email renvoyé ! Vérifie ta boîte mail.'; }
+  } catch (e) {
+    if (err) { err.className = 'auth-err'; err.textContent = authErrMsg(e.code); }
   }
 }
 
@@ -1495,10 +1528,16 @@ async function authRegister() {
   if (pass.length < 6)   { if (err) err.textContent = 'Mot de passe trop court (min. 6 caractères).'; return; }
   if (err) err.textContent = '⏳';
   try {
-    await FB.signUp(email, pass);
-    // auth.onAuthStateChanged prend le relais → onboarding
+    const cred = await FB.signUp(email, pass);
+    await cred.user.sendEmailVerification();
+    await auth.signOut(); // bloque l'accès jusqu'à vérification
+    if (err) {
+      err.className = 'auth-err auth-err-ok';
+      err.textContent = '✅ Email de vérification envoyé ! Clique sur le lien puis connecte-toi.';
+    }
+    authSwitchTab('login');
   } catch (e) {
-    if (err) err.textContent = authErrMsg(e.code);
+    if (err) { err.className = 'auth-err'; err.textContent = authErrMsg(e.code); }
   }
 }
 
