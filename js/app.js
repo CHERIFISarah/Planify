@@ -31,7 +31,7 @@ function go(page, params = {}) {
 
   // Nav visible uniquement pour les pages principales (cachée pendant onboarding)
   const mainPages = ['dashboard','notes','calendar','wellness','tasks'];
-  const hideNav   = ['onboarding','editor','settings','subject','list'];
+  const hideNav   = ['auth','onboarding','editor','settings','subject','list'];
   if (nav) nav.style.display = hideNav.includes(page) ? 'none' : '';
   if (fab) fab.style.display = hideNav.includes(page) ? 'none' : '';
 
@@ -55,6 +55,7 @@ function go(page, params = {}) {
     case 'list':      html = viewList();       break;
     case 'settings':  html = viewSettings();   break;
     case 'onboarding': html = viewOnboarding(); break;
+    case 'auth':       html = viewAuth();       break;
     default:          html = viewDashboard();
   }
   view.innerHTML = html;
@@ -1228,37 +1229,49 @@ if ('serviceWorker' in navigator) {
 // ═══════════════════════════════════════════════════════
 //  Boot
 // ═══════════════════════════════════════════════════════
+let _popstateReady = false;
+
 document.addEventListener('DOMContentLoaded', () => {
-  // Appliquer les réglages sauvegardés
+  // Appliquer les réglages mis en cache localement (avant la réponse Firebase)
   const cfg = LS.cfg();
   if (cfg.dark)     document.body.classList.add('dark');
   if (cfg.fontSize) applyFontSize(cfg.fontSize);
 
-  // Sparkles
   initSparkles();
-
-  // Notifications (eau + agenda)
   initNotifications();
 
-  // ── Premier lancement → onboarding ──────────────────
-  if (!cfg.name) {
-    // Cache la nav et le FAB pendant l'onboarding
-    const nav = document.getElementById('nav');
-    const fab = document.getElementById('fab');
-    if (nav) nav.style.display = 'none';
-    if (fab) fab.style.display = 'none';
-    go('onboarding');
-    return;
-  }
+  // ── Auth Firebase ────────────────────────────────────
+  auth.onAuthStateChanged(async (user) => {
+    if (!user) {
+      go('auth');
+      return;
+    }
 
-  // Navigation par URL hash (optionnel)
-  const hash = location.hash.slice(1) || 'dashboard';
-  go(hash);
+    // Charge les données Firestore dans localStorage
+    await FB.loadAll(user.uid);
 
-  // Gestion bouton retour navigateur
-  window.addEventListener('popstate', () => {
-    const h = location.hash.slice(1) || 'dashboard';
-    go(h);
+    // Re-appliquer les réglages (potentiellement mis à jour depuis Firestore)
+    const ucfg = LS.cfg();
+    if (ucfg.dark)     document.body.classList.add('dark');
+    if (ucfg.fontSize) applyFontSize(ucfg.fontSize);
+
+    // Premier accès → choisir prénom + emoji
+    if (!ucfg.name) {
+      go('onboarding');
+      return;
+    }
+
+    // Navigation hash
+    if (!_popstateReady) {
+      _popstateReady = true;
+      window.addEventListener('popstate', () => {
+        const h = location.hash.slice(1) || 'dashboard';
+        go(h);
+      });
+    }
+    const hash  = location.hash.slice(1);
+    const valid = ['dashboard','notes','calendar','wellness','tasks'];
+    go(valid.includes(hash) ? hash : 'dashboard');
   });
 });
 
@@ -1340,18 +1353,25 @@ function obPreview(val) {
 }
 
 // Valider et lancer l'app
-function finishOnboarding() {
+async function finishOnboarding() {
   const nameInput = document.getElementById('ob-name');
   const name = nameInput ? nameInput.value.trim() : '';
   if (!name) return;
 
   const emoji = window._obEmoji || '🌸';
 
-  // Sauvegarder dans la config
+  // Sauvegarder dans la config (LS.s déclenche aussi Firestore via l'intercept)
   const cfg = LS.cfg();
   cfg.name  = cap(name);
   cfg.emoji = emoji;
   LS.s('pl_cfg', cfg);
+
+  // Upload toutes les données locales → Firestore (premier lancement)
+  const uid = auth.currentUser?.uid;
+  if (uid) {
+    await FB.uploadAll(uid);
+    await FB.saveProfile(uid, { name: cfg.name, emoji: cfg.emoji, email: auth.currentUser.email });
+  }
 
   // Animation de sortie
   const wrap = document.querySelector('.ob-wrap');
@@ -1362,7 +1382,6 @@ function finishOnboarding() {
   }
 
   setTimeout(() => {
-    // Afficher nav + FAB
     const nav = document.getElementById('nav');
     const fab = document.getElementById('fab');
     if (nav) nav.style.display = '';
@@ -1371,6 +1390,152 @@ function finishOnboarding() {
   }, 420);
 }
 
-// Sync hash avec la navigation
-const _origGo = go;
-// (go est déjà défini, pas besoin de wrapper)
+// ══════════════════════════════════════════════════════
+//  AUTH — Écran connexion / inscription
+// ══════════════════════════════════════════════════════
+function viewAuth() {
+  return `
+<div class="ob-wrap" id="auth-wrap">
+
+  <!-- Logo -->
+  <div class="ob-logo">
+    <img src="apple-touch-icon-180.png" class="ob-icon" alt="Planify">
+  </div>
+
+  <!-- Titre -->
+  <div class="ob-hero">
+    <h1 class="ob-title">Planify</h1>
+    <p class="ob-sub">Ton espace personnel pour noter,<br>planifier et prendre soin de toi 🌸</p>
+  </div>
+
+  <!-- Onglets -->
+  <div class="auth-tabs" id="auth-tabs">
+    <button class="auth-tab auth-tab-sel" onclick="authSwitchTab('login')">Connexion</button>
+    <button class="auth-tab" onclick="authSwitchTab('register')">Inscription</button>
+  </div>
+
+  <!-- Formulaire connexion -->
+  <div class="auth-form" id="auth-form-login">
+    <input class="ob-input" type="email"    id="auth-email-l" placeholder="Ton email…"        autocomplete="email">
+    <input class="ob-input" type="password" id="auth-pass-l"  placeholder="Mot de passe…"     autocomplete="current-password">
+    <div class="auth-err" id="auth-err-l"></div>
+    <button class="ob-btn" onclick="authLogin()">
+      <span>Se connecter</span><span class="ob-btn-arrow">→</span>
+    </button>
+  </div>
+
+  <!-- Formulaire inscription -->
+  <div class="auth-form auth-form-hide" id="auth-form-register">
+    <input class="ob-input" type="email"    id="auth-email-r"  placeholder="Ton email…"                 autocomplete="email">
+    <input class="ob-input" type="password" id="auth-pass-r"   placeholder="Choisis un mot de passe…"  autocomplete="new-password">
+    <input class="ob-input" type="password" id="auth-pass-r2"  placeholder="Confirme le mot de passe…" autocomplete="new-password">
+    <div class="auth-err" id="auth-err-r"></div>
+    <button class="ob-btn" onclick="authRegister()">
+      <span>Créer mon compte</span><span class="ob-btn-arrow">→</span>
+    </button>
+  </div>
+
+  <!-- Séparateur -->
+  <div class="auth-or"><span>ou</span></div>
+
+  <!-- Google Sign-In -->
+  <button class="auth-google-btn" onclick="authGoogle()">
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+      <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908C16.658 14.092 17.64 11.784 17.64 9.2z"/>
+      <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/>
+      <path fill="#FBBC05" d="M3.964 10.706A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.706V4.962H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.038l3.007-2.332z"/>
+      <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.962L3.964 7.294C4.672 5.163 6.656 3.58 9 3.58z"/>
+    </svg>
+    Continuer avec Google
+  </button>
+
+  <p class="ob-privacy">Tes données sont chiffrées et privées 🔒</p>
+
+</div>`;
+}
+
+function authSwitchTab(tab) {
+  const tabs = document.querySelectorAll('.auth-tab');
+  const fl   = document.getElementById('auth-form-login');
+  const fr   = document.getElementById('auth-form-register');
+  if (tab === 'login') {
+    tabs[0].classList.add('auth-tab-sel');
+    tabs[1].classList.remove('auth-tab-sel');
+    fl.classList.remove('auth-form-hide');
+    fr.classList.add('auth-form-hide');
+  } else {
+    tabs[1].classList.add('auth-tab-sel');
+    tabs[0].classList.remove('auth-tab-sel');
+    fr.classList.remove('auth-form-hide');
+    fl.classList.add('auth-form-hide');
+  }
+}
+
+async function authLogin() {
+  const email = document.getElementById('auth-email-l')?.value?.trim();
+  const pass  = document.getElementById('auth-pass-l')?.value;
+  const err   = document.getElementById('auth-err-l');
+  if (!email || !pass) { if (err) err.textContent = 'Remplis tous les champs.'; return; }
+  if (err) err.textContent = '⏳';
+  try {
+    await FB.signIn(email, pass);
+    // auth.onAuthStateChanged prend le relais
+  } catch (e) {
+    if (err) err.textContent = authErrMsg(e.code);
+  }
+}
+
+async function authRegister() {
+  const email = document.getElementById('auth-email-r')?.value?.trim();
+  const pass  = document.getElementById('auth-pass-r')?.value;
+  const pass2 = document.getElementById('auth-pass-r2')?.value;
+  const err   = document.getElementById('auth-err-r');
+  if (!email || !pass)   { if (err) err.textContent = 'Remplis tous les champs.'; return; }
+  if (pass !== pass2)    { if (err) err.textContent = 'Les mots de passe ne correspondent pas.'; return; }
+  if (pass.length < 6)   { if (err) err.textContent = 'Mot de passe trop court (min. 6 caractères).'; return; }
+  if (err) err.textContent = '⏳';
+  try {
+    await FB.signUp(email, pass);
+    // auth.onAuthStateChanged prend le relais → onboarding
+  } catch (e) {
+    if (err) err.textContent = authErrMsg(e.code);
+  }
+}
+
+async function authGoogle() {
+  try {
+    await FB.signInGoogle();
+    // auth.onAuthStateChanged prend le relais
+  } catch (e) {
+    if (e.code !== 'auth/popup-closed-by-user') {
+      showToast('Erreur Google : ' + authErrMsg(e.code));
+    }
+  }
+}
+
+function authErrMsg(code) {
+  const msgs = {
+    'auth/user-not-found':          'Compte introuvable. Inscris-toi !',
+    'auth/wrong-password':          'Mot de passe incorrect.',
+    'auth/invalid-credential':      'Email ou mot de passe incorrect.',
+    'auth/email-already-in-use':    'Cet email est déjà utilisé.',
+    'auth/invalid-email':           'Email invalide.',
+    'auth/weak-password':           'Mot de passe trop faible.',
+    'auth/too-many-requests':       'Trop de tentatives. Réessaie plus tard.',
+    'auth/network-request-failed':  'Pas de connexion internet.',
+  };
+  return msgs[code] || 'Une erreur est survenue. Réessaie.';
+}
+
+// Déconnexion (appelée depuis les settings)
+function signOutUser() {
+  if (!confirm('Se déconnecter de Planify ?')) return;
+  FB.signOut().then(() => {
+    // Vider le localStorage de cette session
+    ['pl_subjects','pl_notes','pl_events','pl_ics','pl_moods','pl_habits',
+     'pl_hlogs','pl_cycle','pl_cyclecfg','pl_lists','pl_todos','pl_cfg',
+     'pl_water','pl_focus','pl_gratitude','pl_wgoals'].forEach(k =>
+      localStorage.removeItem(k));
+    go('auth');
+  });
+}

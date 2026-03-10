@@ -2,7 +2,8 @@
 //  Vue : Réglages
 // ═══════════════════════════════════════════════════════
 function viewSettings() {
-  const cfg = LS.cfg();
+  const cfg   = LS.cfg();
+  const email = auth.currentUser?.email || '';
 
   const stats = [
     ['Notes',     LS.notes().length],
@@ -23,6 +24,15 @@ function viewSettings() {
 <!-- Profil -->
 <div class="st">Mon profil</div>
 <div class="card">
+  ${email ? `
+  <div class="setting-row" style="margin-bottom:.5rem">
+    <div>
+      <div class="setting-label">Compte</div>
+      <div class="setting-hint" style="font-size:.78rem;word-break:break-all">${esc(email)}</div>
+    </div>
+    <span style="font-size:1.2rem">🔒</span>
+  </div>
+  <div class="setting-sep"></div>` : ''}
   <div class="setting-row">
     <div>
       <div class="setting-label">Prénom</div>
@@ -178,15 +188,23 @@ function viewSettings() {
   </button>
 </div>
 
+<!-- Compte -->
+<div class="st">Compte</div>
+<div class="card">
+  <button class="btn btn-danger btn-full" onclick="signOutUser()" style="font-size:.9rem;padding:.8rem">
+    🚪 Se déconnecter
+  </button>
+</div>
+
 <!-- À propos -->
 <div class="st">À propos</div>
 <div class="card" style="text-align:center;padding:1.25rem">
   <div style="font-size:2rem;margin-bottom:.4rem">🌸</div>
   <div style="font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:700;color:var(--p)">Planify</div>
-  <div style="font-size:.8rem;color:var(--ts);margin-top:.2rem">Version 2.0 · Ton espace personnel</div>
+  <div style="font-size:.8rem;color:var(--ts);margin-top:.2rem">Version 3.0 · Cloud sync</div>
   <div style="font-size:.78rem;color:var(--ts);margin-top:.75rem;line-height:1.6">
-    Toutes tes données restent sur ton appareil.<br>
-    Aucune connexion requise. 100% privé. 💕
+    Tes données sont synchronisées et chiffrées.<br>
+    Accessibles sur tous tes appareils. 🔒
   </div>
 </div>
 
