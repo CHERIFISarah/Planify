@@ -1240,6 +1240,13 @@ document.addEventListener('DOMContentLoaded', () => {
   initSparkles();
   initNotifications();
 
+  // ── Gérer le retour de signInWithRedirect (Google sur mobile) ──
+  auth.getRedirectResult().catch(e => {
+    if (e.code && e.code !== 'auth/no-current-user') {
+      showToast('Erreur Google : ' + (e.message || e.code));
+    }
+  });
+
   // ── Auth Firebase ────────────────────────────────────
   auth.onAuthStateChanged(async (user) => {
     if (!user) {
@@ -1531,11 +1538,13 @@ async function authRegister() {
     const cred = await FB.signUp(email, pass);
     await cred.user.sendEmailVerification();
     await auth.signOut(); // bloque l'accès jusqu'à vérification
-    if (err) {
-      err.className = 'auth-err auth-err-ok';
-      err.textContent = '✅ Email de vérification envoyé ! Clique sur le lien puis connecte-toi.';
+    authSwitchTab('login'); // on bascule sur l'onglet connexion
+    // Afficher le message de succès dans le form LOGIN (visible)
+    const errLogin = document.getElementById('auth-err-l');
+    if (errLogin) {
+      errLogin.className = 'auth-err auth-err-ok';
+      errLogin.textContent = '✅ Email de vérification envoyé à ' + email + ' ! Clique sur le lien puis connecte-toi.';
     }
-    authSwitchTab('login');
   } catch (e) {
     if (err) { err.className = 'auth-err'; err.textContent = authErrMsg(e.code); }
   }
