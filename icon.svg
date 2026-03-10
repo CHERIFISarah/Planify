@@ -1,4 +1,61 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="115" fill="#C4778E"/>
-  <text x="256" y="345" font-size="260" text-anchor="middle" fill="white" font-family="serif">🌸</text>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#CC7A92"/>
+      <stop offset="55%" stop-color="#A0486A"/>
+      <stop offset="100%" stop-color="#7A2E50"/>
+    </linearGradient>
+    <linearGradient id="petal" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFF0F5"/>
+      <stop offset="100%" stop-color="#FFC8DC"/>
+    </linearGradient>
+    <linearGradient id="petal2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFE0EC"/>
+      <stop offset="100%" stop-color="#F9A8C4"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Fond dégradé rose profond -->
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+
+  <!-- Reflet haut -->
+  <ellipse cx="170" cy="80" rx="200" ry="85"
+           fill="rgba(255,255,255,0.1)" transform="rotate(-18,170,80)"/>
+
+  <!-- ── Fleur de cerisier (petite, en haut) ── -->
+  <g transform="translate(256,145)">
+    <ellipse cx="0" cy="-48" rx="19" ry="42" fill="url(#petal)"  opacity="0.95" transform="rotate(0)"/>
+    <ellipse cx="0" cy="-48" rx="19" ry="42" fill="url(#petal2)" opacity="0.92" transform="rotate(72)"/>
+    <ellipse cx="0" cy="-48" rx="19" ry="42" fill="url(#petal)"  opacity="0.90" transform="rotate(144)"/>
+    <ellipse cx="0" cy="-48" rx="19" ry="42" fill="url(#petal2)" opacity="0.92" transform="rotate(216)"/>
+    <ellipse cx="0" cy="-48" rx="19" ry="42" fill="url(#petal)"  opacity="0.95" transform="rotate(288)"/>
+    <circle cx="0" cy="0" r="16" fill="#F8D49C"/>
+    <circle cx="0"  cy="-9" r="3.5" fill="#CC8820"/>
+    <circle cx="8"  cy="-3" r="3"   fill="#CC8820"/>
+    <circle cx="5"  cy="8"  r="3"   fill="#CC8820"/>
+    <circle cx="-5" cy="8"  r="3"   fill="#CC8820"/>
+    <circle cx="-8" cy="-3" r="3.5" fill="#CC8820"/>
+  </g>
+
+  <!-- ── "Planify" — grand et centré ── -->
+  <text x="256" y="318"
+        font-size="108"
+        text-anchor="middle"
+        fill="white"
+        font-family="Georgia, 'Palatino Linotype', serif"
+        font-weight="700"
+        letter-spacing="2">Planify</text>
+
+  <!-- Ligne déco -->
+  <line x1="148" y1="342" x2="364" y2="342"
+        stroke="rgba(255,255,255,0.35)" stroke-width="1.5"/>
+
+  <!-- Tagline plus grande -->
+  <text x="256" y="386"
+        font-size="36"
+        text-anchor="middle"
+        fill="rgba(255,220,235,0.85)"
+        font-family="Georgia, serif"
+        font-style="italic"
+        letter-spacing="2">ton espace</text>
 </svg>
