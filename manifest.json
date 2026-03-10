@@ -1,0 +1,13 @@
+{
+  "name": "Planify — Mon Espace",
+  "short_name": "Planify",
+  "description": "Notes, agenda, bien-être et tâches — tout pour toi 🌸",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#FBF8F6",
+  "theme_color": "#C4778E",
+  "orientation": "portrait-primary",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
