@@ -213,9 +213,12 @@ function saveSubject(id) {
 // ═══════════════════════════════════════════════════════
 //  MODAL : Événement (Agenda)
 // ═══════════════════════════════════════════════════════
-function openEventModal(id) {
-  const ev = id ? LS.events().find(x => x.id === id) : null;
-  const defDate = _selDay || today();
+function openEventModal(dateOrId) {
+  // Distingue une date 'YYYY-MM-DD' d'un vrai ID d'événement
+  const isDate = /^\d{4}-\d{2}-\d{2}$/.test(dateOrId || '');
+  const ev      = (!isDate && dateOrId) ? LS.events().find(x => x.id === dateOrId) : null;
+  const defDate = (isDate && dateOrId)  ? dateOrId : (_selDay || today());
+  const id      = ev?.id || '';
 
   openModal(`
 <div class="modal-body">
