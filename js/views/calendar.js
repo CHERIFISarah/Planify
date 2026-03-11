@@ -22,7 +22,7 @@ function viewCalendar() {
   return `
 <div class="ph">
   <span class="ph-title">Agenda</span>
-  <button class="ph-action" onclick="openEventModal('${td}')">+ Événement</button>
+  <button class="ph-action" onclick="openEventModal('${td}')" aria-label="Nouvel événement">+</button>
 </div>
 <div class="pg">
   ${tabs}
