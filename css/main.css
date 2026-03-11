@@ -2220,3 +2220,28 @@ body .btn, body .fab, body .ni svg, body .card-tap { transition: all .25s cubic-
 }
 .auth-google-btn:hover { background:rgba(255,255,255,.13); border-color:rgba(255,255,255,.22); transform:translateY(-1px); }
 .auth-google-btn:active { transform:scale(.97); }
+/* ── Password show/hide ── */
+.pw-wrap { position:relative; width:100%; }
+.pw-wrap .ob-input  { padding-right:3rem; }
+.pw-wrap .form-input { padding-right:3rem; }
+.pw-toggle {
+  position:absolute; right:.75rem; top:50%; transform:translateY(-50%);
+  background:none; border:none; cursor:pointer; padding:.3rem;
+  color:rgba(192,160,178,.55); display:flex; align-items:center;
+  transition:color .2s;
+}
+.pw-toggle:hover { color:rgba(196,119,142,.9); }
+/* ── Forgot password link ── */
+.auth-forgot-btn {
+  background:none; border:none; cursor:pointer; width:100%; text-align:center;
+  color:rgba(196,119,142,.75); font-size:.82rem; padding:.55rem 0 0;
+  transition:color .2s;
+}
+.auth-forgot-btn:hover { color:rgba(196,119,142,1); }
+.auth-forgot-btn:disabled { opacity:.5; cursor:default; }
+/* ── Provider badge (settings) ── */
+.st-provider-badge {
+  font-size:.72rem; font-weight:600; padding:.25rem .65rem; border-radius:20px;
+  background:rgba(255,255,255,.07); color:rgba(192,160,178,.85);
+  display:flex; align-items:center; gap:.3rem; white-space:nowrap;
+}

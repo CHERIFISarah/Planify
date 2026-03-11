@@ -1250,7 +1250,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // ── Auth Firebase ────────────────────────────────────
   auth.onAuthStateChanged(async (user) => {
     if (!user) {
-      go('auth');
+      // Ne pas re-rendre si on est déjà sur la page auth (évite d'effacer les messages)
+      if (_page !== 'auth') go('auth');
       return;
     }
 
@@ -1430,19 +1431,35 @@ function viewAuth() {
 
   <!-- Formulaire connexion -->
   <div class="auth-form" id="auth-form-login">
-    <input class="ob-input" type="email"    id="auth-email-l" placeholder="Ton email…"        autocomplete="email">
-    <input class="ob-input" type="password" id="auth-pass-l"  placeholder="Mot de passe…"     autocomplete="current-password">
+    <input class="ob-input" type="email"    id="auth-email-l" placeholder="Ton email…" autocomplete="email">
+    <div class="pw-wrap">
+      <input class="ob-input" type="password" id="auth-pass-l" placeholder="Mot de passe…" autocomplete="current-password">
+      <button class="pw-toggle" type="button" onclick="togglePw('auth-pass-l',this)" aria-label="Afficher le mot de passe">
+        <svg id="eye-l" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+      </button>
+    </div>
     <div class="auth-err" id="auth-err-l"></div>
     <button class="ob-btn" onclick="authLogin()">
       <span>Se connecter</span><span class="ob-btn-arrow">→</span>
     </button>
+    <button class="auth-forgot-btn" type="button" onclick="authForgotPassword()">Mot de passe oublié ?</button>
   </div>
 
   <!-- Formulaire inscription -->
   <div class="auth-form auth-form-hide" id="auth-form-register">
-    <input class="ob-input" type="email"    id="auth-email-r"  placeholder="Ton email…"                 autocomplete="email">
-    <input class="ob-input" type="password" id="auth-pass-r"   placeholder="Choisis un mot de passe…"  autocomplete="new-password">
-    <input class="ob-input" type="password" id="auth-pass-r2"  placeholder="Confirme le mot de passe…" autocomplete="new-password">
+    <input class="ob-input" type="email"    id="auth-email-r"  placeholder="Ton email…" autocomplete="email">
+    <div class="pw-wrap">
+      <input class="ob-input" type="password" id="auth-pass-r"  placeholder="Choisis un mot de passe…" autocomplete="new-password">
+      <button class="pw-toggle" type="button" onclick="togglePw('auth-pass-r',this)" aria-label="Afficher le mot de passe">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+      </button>
+    </div>
+    <div class="pw-wrap">
+      <input class="ob-input" type="password" id="auth-pass-r2" placeholder="Confirme le mot de passe…" autocomplete="new-password">
+      <button class="pw-toggle" type="button" onclick="togglePw('auth-pass-r2',this)" aria-label="Afficher le mot de passe">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+      </button>
+    </div>
     <div class="auth-err" id="auth-err-r"></div>
     <button class="ob-btn" onclick="authRegister()">
       <span>Créer mon compte</span><span class="ob-btn-arrow">→</span>
@@ -1468,6 +1485,17 @@ function viewAuth() {
 </div>`;
 }
 
+function togglePw(inputId, btn) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  const show = input.type === 'password';
+  input.type = show ? 'text' : 'password';
+  btn.innerHTML = show
+    ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`
+    : `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
+  btn.style.color = show ? 'rgba(196,119,142,.9)' : '';
+}
+
 function authSwitchTab(tab) {
   const tabs = document.querySelectorAll('.auth-tab');
   const fl   = document.getElementById('auth-form-login');
@@ -1489,8 +1517,10 @@ async function authLogin() {
   const email = document.getElementById('auth-email-l')?.value?.trim();
   const pass  = document.getElementById('auth-pass-l')?.value;
   const err   = document.getElementById('auth-err-l');
-  if (!email || !pass) { if (err) err.textContent = 'Remplis tous les champs.'; return; }
-  if (err) { err.className = 'auth-err'; err.textContent = '⏳'; }
+  const btn   = document.querySelector('#auth-form-login .ob-btn');
+  if (!email || !pass) { if (err) { err.className='auth-err'; err.textContent='Remplis tous les champs.'; } return; }
+  if (err) { err.className = 'auth-err'; err.textContent = ''; }
+  if (btn) btn.disabled = true;
   try {
     await FB.signIn(email, pass);
     const user = auth.currentUser;
@@ -1499,7 +1529,7 @@ async function authLogin() {
       await auth.signOut();
       if (err) {
         err.className = 'auth-err';
-        err.innerHTML = '📧 Email non vérifié. Vérifie ta boîte mail !'
+        err.innerHTML = '📧 Email non vérifié. Vérifie ta boîte mail (et tes <b>spams</b>) !'
           + '<br><button class="auth-resend-btn" onclick="authResendVerification()">Renvoyer l\'email</button>';
       }
       return;
@@ -1507,6 +1537,8 @@ async function authLogin() {
     // auth.onAuthStateChanged prend le relais
   } catch (e) {
     if (err) { err.className = 'auth-err'; err.textContent = authErrMsg(e.code); }
+  } finally {
+    if (btn) btn.disabled = false;
   }
 }
 
@@ -1519,7 +1551,7 @@ async function authResendVerification() {
     const cred = await FB.signIn(email, pass);
     await cred.user.sendEmailVerification();
     await auth.signOut();
-    if (err) { err.className = 'auth-err auth-err-ok'; err.textContent = '✅ Email renvoyé ! Vérifie ta boîte mail.'; }
+    if (err) { err.className = 'auth-err auth-err-ok'; err.textContent = '✅ Email renvoyé ! Vérifie ta boîte mail et tes spams.'; }
   } catch (e) {
     if (err) { err.className = 'auth-err'; err.textContent = authErrMsg(e.code); }
   }
@@ -1530,23 +1562,49 @@ async function authRegister() {
   const pass  = document.getElementById('auth-pass-r')?.value;
   const pass2 = document.getElementById('auth-pass-r2')?.value;
   const err   = document.getElementById('auth-err-r');
-  if (!email || !pass)   { if (err) err.textContent = 'Remplis tous les champs.'; return; }
-  if (pass !== pass2)    { if (err) err.textContent = 'Les mots de passe ne correspondent pas.'; return; }
-  if (pass.length < 6)   { if (err) err.textContent = 'Mot de passe trop court (min. 6 caractères).'; return; }
-  if (err) err.textContent = '⏳';
+  const btn   = document.querySelector('#auth-form-register .ob-btn');
+  if (!email || !pass)   { if (err) { err.className='auth-err'; err.textContent='Remplis tous les champs.'; } return; }
+  if (pass !== pass2)    { if (err) { err.className='auth-err'; err.textContent='Les mots de passe ne correspondent pas.'; } return; }
+  if (pass.length < 6)   { if (err) { err.className='auth-err'; err.textContent='Mot de passe trop court (min. 6 caractères).'; } return; }
+  if (btn) btn.disabled = true;
+  if (err) { err.className='auth-err'; err.textContent=''; }
   try {
     const cred = await FB.signUp(email, pass);
     await cred.user.sendEmailVerification();
     await auth.signOut(); // bloque l'accès jusqu'à vérification
     authSwitchTab('login'); // on bascule sur l'onglet connexion
-    // Afficher le message de succès dans le form LOGIN (visible)
     const errLogin = document.getElementById('auth-err-l');
     if (errLogin) {
       errLogin.className = 'auth-err auth-err-ok';
-      errLogin.textContent = '✅ Email de vérification envoyé à ' + email + ' ! Clique sur le lien puis connecte-toi.';
+      errLogin.textContent = '✅ Email envoyé à ' + email + ' ! Clique sur le lien puis reviens ici. (Vérifie aussi tes spams si tu ne le reçois pas)';
     }
   } catch (e) {
     if (err) { err.className = 'auth-err'; err.textContent = authErrMsg(e.code); }
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+async function authForgotPassword() {
+  const email = document.getElementById('auth-email-l')?.value?.trim();
+  const err   = document.getElementById('auth-err-l');
+  const btn   = document.querySelector('.auth-forgot-btn');
+  if (!email) {
+    if (err) { err.className = 'auth-err'; err.textContent = 'Entre ton email d\'abord puis clique ici.'; }
+    return;
+  }
+  if (btn) btn.disabled = true;
+  if (err) { err.className = 'auth-err'; err.textContent = '⏳ Envoi en cours…'; }
+  try {
+    await auth.sendPasswordResetEmail(email);
+    if (err) {
+      err.className = 'auth-err auth-err-ok';
+      err.textContent = '✅ Email envoyé à ' + email + ' ! Clique sur le lien pour choisir un nouveau mot de passe (vérifie tes spams).';
+    }
+  } catch (e) {
+    if (err) { err.className = 'auth-err'; err.textContent = authErrMsg(e.code); }
+  } finally {
+    if (btn) btn.disabled = false;
   }
 }
 
@@ -1555,7 +1613,15 @@ async function authGoogle() {
     await FB.signInGoogle();
     // auth.onAuthStateChanged prend le relais
   } catch (e) {
-    if (e.code !== 'auth/popup-closed-by-user') {
+    if (e.code === 'auth/popup-blocked' || e.code === 'auth/popup-closed-by-user') {
+      // Popup bloquée → fallback redirect
+      try {
+        const prov = new firebase.auth.GoogleAuthProvider();
+        await auth.signInWithRedirect(prov);
+      } catch (e2) {
+        showToast('Erreur Google : ' + authErrMsg(e2.code));
+      }
+    } else if (e.code) {
       showToast('Erreur Google : ' + authErrMsg(e.code));
     }
   }
@@ -1563,16 +1629,88 @@ async function authGoogle() {
 
 function authErrMsg(code) {
   const msgs = {
-    'auth/user-not-found':          'Compte introuvable. Inscris-toi !',
-    'auth/wrong-password':          'Mot de passe incorrect.',
-    'auth/invalid-credential':      'Email ou mot de passe incorrect.',
-    'auth/email-already-in-use':    'Cet email est déjà utilisé.',
-    'auth/invalid-email':           'Email invalide.',
-    'auth/weak-password':           'Mot de passe trop faible.',
-    'auth/too-many-requests':       'Trop de tentatives. Réessaie plus tard.',
-    'auth/network-request-failed':  'Pas de connexion internet.',
+    'auth/user-not-found':                          'Compte introuvable. Inscris-toi !',
+    'auth/wrong-password':                          'Mot de passe incorrect.',
+    'auth/invalid-credential':                      'Email ou mot de passe incorrect.',
+    'auth/email-already-in-use':                    'Cet email est déjà utilisé.',
+    'auth/invalid-email':                           'Email invalide.',
+    'auth/weak-password':                           'Mot de passe trop faible.',
+    'auth/too-many-requests':                       'Trop de tentatives. Réessaie dans quelques minutes.',
+    'auth/network-request-failed':                  'Pas de connexion internet.',
+    'auth/popup-blocked':                           'Popup bloquée par le navigateur. Autorise les popups ou réessaie.',
+    'auth/popup-closed-by-user':                    'Connexion Google annulée.',
+    'auth/cancelled-popup-request':                 'Connexion Google annulée.',
+    'auth/account-exists-with-different-credential':'Un compte existe déjà avec cet email. Essaie de te connecter par email/mot de passe.',
+    'auth/unauthorized-domain':                     'Domaine non autorisé dans Firebase. Contacte l\'administrateur.',
+    'auth/user-disabled':                           'Ce compte a été désactivé.',
+    'auth/operation-not-allowed':                   'Cette méthode de connexion n\'est pas activée.',
+    'auth/requires-recent-login':                   'Reconnecte-toi d\'abord pour effectuer cette action.',
   };
-  return msgs[code] || 'Une erreur est survenue. Réessaie.';
+  return msgs[code] || ('Erreur : ' + code);
+}
+
+// Changement de mot de passe (appelé depuis les settings)
+function openChangePasswordModal() {
+  const eyeSvg = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
+  openModal(`
+<div style="padding:.25rem 0">
+  <div class="form-group">
+    <label class="form-label">Mot de passe actuel</label>
+    <div class="pw-wrap">
+      <input class="form-input" type="password" id="cp-old" placeholder="Mot de passe actuel…" autocomplete="current-password">
+      <button class="pw-toggle" type="button" onclick="togglePw('cp-old',this)" aria-label="Voir">${eyeSvg}</button>
+    </div>
+  </div>
+  <div class="form-group">
+    <label class="form-label">Nouveau mot de passe</label>
+    <div class="pw-wrap">
+      <input class="form-input" type="password" id="cp-new" placeholder="Nouveau mot de passe…" autocomplete="new-password">
+      <button class="pw-toggle" type="button" onclick="togglePw('cp-new',this)" aria-label="Voir">${eyeSvg}</button>
+    </div>
+  </div>
+  <div class="form-group">
+    <label class="form-label">Confirmer le nouveau mot de passe</label>
+    <div class="pw-wrap">
+      <input class="form-input" type="password" id="cp-new2" placeholder="Confirme…" autocomplete="new-password">
+      <button class="pw-toggle" type="button" onclick="togglePw('cp-new2',this)" aria-label="Voir">${eyeSvg}</button>
+    </div>
+  </div>
+  <div class="auth-err" id="cp-err" style="margin:.5rem 0 0"></div>
+  <button class="btn btn-full" onclick="changePassword()" style="margin-top:.75rem">Changer le mot de passe</button>
+</div>`, 'Changer le mot de passe');
+}
+
+async function changePassword() {
+  const oldPass = document.getElementById('cp-old')?.value;
+  const newPass = document.getElementById('cp-new')?.value;
+  const newPass2 = document.getElementById('cp-new2')?.value;
+  const err = document.getElementById('cp-err');
+  if (!oldPass || !newPass || !newPass2) {
+    if (err) { err.className = 'auth-err'; err.textContent = 'Remplis tous les champs.'; }
+    return;
+  }
+  if (newPass !== newPass2) {
+    if (err) { err.className = 'auth-err'; err.textContent = 'Les nouveaux mots de passe ne correspondent pas.'; }
+    return;
+  }
+  if (newPass.length < 6) {
+    if (err) { err.className = 'auth-err'; err.textContent = 'Mot de passe trop court (min. 6 caractères).'; }
+    return;
+  }
+  if (err) { err.className = 'auth-err'; err.textContent = '⏳ Changement en cours…'; }
+  const btn = document.querySelector('#modal-inner .btn');
+  if (btn) btn.disabled = true;
+  try {
+    const user = auth.currentUser;
+    const credential = firebase.auth.EmailAuthProvider.credential(user.email, oldPass);
+    await user.reauthenticateWithCredential(credential);
+    await user.updatePassword(newPass);
+    closeModal();
+    showToast('✅ Mot de passe modifié avec succès !');
+  } catch (e) {
+    if (err) { err.className = 'auth-err'; err.textContent = authErrMsg(e.code); }
+    if (btn) btn.disabled = false;
+  }
 }
 
 // Déconnexion (appelée depuis les settings)
