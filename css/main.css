@@ -2192,7 +2192,7 @@ body .btn, body .fab, body .ni svg, body .card-tap { transition: all .25s cubic-
   min-height:1.2em; font-size:.82rem; font-weight:600;
   color:#FDA4AF; text-align:center; line-height:1.5;
 }
-.auth-err-ok { color:#86efac !important; }
+.auth-err-ok { color:rgba(255,255,255,.92) !important; }
 .auth-resend-btn {
   margin-top:.45rem; padding:.3rem .9rem; border-radius:20px;
   background:rgba(255,255,255,.13); border:1.5px solid rgba(255,255,255,.22);
