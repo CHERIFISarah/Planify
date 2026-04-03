@@ -23,7 +23,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,500&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/main.css?v=12">
+<link rel="stylesheet" href="css/main.css?v=23">
 <title>Planify ✨</title>
 </head>
 <body>
@@ -56,6 +56,15 @@
       <span class="ni-badge" id="task-badge"></span>
       Tâches
     </button>
+    <button class="ni" data-p="grades" onclick="go('grades')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+      Moyennes
+    </button>
+    <button class="ni" data-p="luna" onclick="go('luna')" style="position:relative">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="3" fill="currentColor" stroke="none" opacity=".3"/></svg>
+      <span style="position:absolute;top:2px;right:6px;width:6px;height:6px;border-radius:50%;background:linear-gradient(135deg,#A78BFA,#C93070);box-shadow:0 0 6px rgba(167,139,250,.8)"></span>
+      Luna IA
+    </button>
   </nav>
 </div>
 
@@ -81,10 +90,23 @@
     <button class="tb-btn" onclick="insertTable()"       title="Tableau">⊞</button>
     <button class="tb-btn" onclick="insertImage()"       title="Image">🖼</button>
     <button class="tb-btn" onclick="fmtBlock('blockquote')" title="Citation">❝</button>
+    <div class="tb-sep"></div>
+    <button class="tb-btn tb-highlight-y" onclick="applyHighlight('#FFE066')" title="Surligner jaune">A</button>
+    <button class="tb-btn tb-highlight-p" onclick="applyHighlight('#FFB3D9')" title="Surligner rose">A</button>
+    <div class="tb-sep"></div>
+    <button class="tb-btn" onclick="exportNotePDF()" title="Exporter en PDF">PDF</button>
     <input type="file" id="img-file-in" accept="image/*" style="display:none" onchange="handleImageFile(this)">
   </div>
   <div class="ed-body">
     <input id="e-title" type="text" placeholder="Titre…">
+    <!-- Tags -->
+    <div class="ed-tags-row" id="ed-tags-row">
+      <div class="ed-tags-list" id="ed-tags-list"></div>
+      <input class="ed-tags-input" id="ed-tags-input" type="text"
+        placeholder="#exam #important…"
+        onkeydown="handleTagInput(event)"
+        autocomplete="off">
+    </div>
     <div id="e-content" contenteditable="true" data-placeholder="Commence à écrire…"></div>
   </div>
 </div>
@@ -106,14 +128,161 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 
 <!-- Scripts — order matters -->
-<script src="js/data.js?v=10"></script>
-<script src="js/firebase-config.js?v=10"></script>
-<script src="js/views/dashboard.js?v=10"></script>
-<script src="js/views/notes.js?v=10"></script>
-<script src="js/views/calendar.js?v=13"></script>
-<script src="js/views/wellness.js?v=10"></script>
-<script src="js/views/tasks.js?v=10"></script>
-<script src="js/views/settings.js?v=12"></script>
-<script src="js/app.js?v=13"></script>
+<script src="js/data.js?v=23"></script>
+<script src="js/firebase-config.js?v=23"></script>
+<script src="js/views/dashboard.js?v=23"></script>
+<script src="js/views/notes.js?v=23"></script>
+<script src="js/views/calendar.js?v=23"></script>
+<script src="js/views/wellness.js?v=23"></script>
+<script src="js/views/tasks.js?v=23"></script>
+<script src="js/views/grades.js?v=23"></script>
+<script src="js/views/shopping.js?v=23"></script>
+<script src="js/views/settings.js?v=23"></script>
+<script src="js/views/luna.js?v=23"></script>
+<script src="js/app.js?v=23"></script>
+
+<!-- ── Tableau : insertion DOM pure (styles garantis) ── -->
+<script>
+window.addEventListener('load', function() {
+
+  /* ── Ouvre la modale de configuration du tableau ── */
+  window.insertTable = function() {
+    openModal(`
+<div class="modal-body">
+  <div class="form-row">
+    <div class="form-group" style="flex:1">
+      <label class="form-label">Colonnes</label>
+      <input class="form-input" id="tbl-cols" type="number" min="1" max="10" value="3" style="width:70px">
+    </div>
+    <div class="form-group" style="flex:1">
+      <label class="form-label">Lignes</label>
+      <input class="form-input" id="tbl-rows" type="number" min="1" max="20" value="3" style="width:70px">
+    </div>
+  </div>
+  <div class="form-row">
+    <div class="form-group" style="flex:1">
+      <label class="form-label">🎨 Fond en-tête</label>
+      <input class="form-input" id="tbl-hbg" type="color" value="#C4778E" style="padding:.2rem;height:38px;width:100%">
+    </div>
+    <div class="form-group" style="flex:1">
+      <label class="form-label">🔤 Texte en-tête</label>
+      <input class="form-input" id="tbl-htxt" type="color" value="#ffffff" style="padding:.2rem;height:38px;width:100%">
+    </div>
+  </div>
+  <div class="form-row">
+    <div class="form-group" style="flex:1">
+      <label class="form-label">🎨 Fond cellules</label>
+      <input class="form-input" id="tbl-cbg" type="color" value="#ffffff" style="padding:.2rem;height:38px;width:100%">
+    </div>
+    <div class="form-group" style="flex:1">
+      <label class="form-label">🔤 Texte cellules</label>
+      <input class="form-input" id="tbl-ctxt" type="color" value="#333333" style="padding:.2rem;height:38px;width:100%">
+    </div>
+  </div>
+  <div class="form-group">
+    <label class="form-label">Taille du texte</label>
+    <select class="setting-select" id="tbl-fsize" style="width:100%">
+      <option value="11px">Petit (11px)</option>
+      <option value="13px">Normal (13px)</option>
+      <option value="15px" selected>Moyen (15px)</option>
+      <option value="17px">Grand (17px)</option>
+      <option value="20px">Très grand (20px)</option>
+    </select>
+  </div>
+  <div class="modal-actions">
+    <button class="btn btn-ghost" onclick="closeModal()">Annuler</button>
+    <button class="btn" onclick="doInsertTable()">Insérer ✓</button>
+  </div>
+</div>`, '⊞ Tableau');
+  };
+
+  /* ── Construit le tableau via DOM pur → styles GARANTIS ── */
+  window.doInsertTable = function() {
+    // 1. Lire les valeurs AVANT de fermer la modale
+    var rows  = Math.max(1, Math.min(20, parseInt(document.getElementById('tbl-rows').value) || 3));
+    var cols  = Math.max(1, Math.min(10, parseInt(document.getElementById('tbl-cols').value) || 3));
+    var hBg   = document.getElementById('tbl-hbg').value   || '#C4778E';
+    var hTxt  = document.getElementById('tbl-htxt').value  || '#ffffff';
+    var cBg   = document.getElementById('tbl-cbg').value   || '#ffffff';
+    var cTxt  = document.getElementById('tbl-ctxt').value  || '#333333';
+    var fsize = document.getElementById('tbl-fsize').value || '15px';
+
+    closeModal();
+
+    // 2. Insérer après fermeture de la modale (DOM stable)
+    setTimeout(function() {
+      var el = document.getElementById('e-content');
+      if (!el) return;
+
+      // --- Construire le tableau entièrement en DOM ---
+      // (jamais de innerHTML : les styles inline sont appliqués DIRECTEMENT)
+
+      var table = document.createElement('table');
+      table.style.borderCollapse = 'collapse';
+      table.style.width          = '100%';
+      table.style.margin         = '10px 0';
+      table.style.tableLayout    = 'auto';
+
+      var tbody = document.createElement('tbody');
+
+      for (var r = 0; r < rows; r++) {
+        var tr = document.createElement('tr');
+
+        for (var c = 0; c < cols; c++) {
+          var isHeader = (r === 0);
+          var cell = document.createElement(isHeader ? 'th' : 'td');
+          cell.contentEditable = 'true';
+          cell.textContent = isHeader ? 'En-tête' : 'Cellule';
+
+          // Appliquer les styles directement sur l'élément DOM
+          // → impossible à écraser par une règle CSS de classe
+          cell.style.border      = isHeader ? '2px solid #aaa' : '1.5px solid #ccc';
+          cell.style.padding     = '8px 12px';
+          cell.style.minWidth    = '80px';
+          cell.style.fontSize    = fsize;
+          cell.style.fontFamily  = 'inherit';
+          cell.style.textAlign   = 'left';
+          cell.style.verticalAlign = 'top';
+
+          if (isHeader) {
+            cell.style.backgroundColor = hBg;
+            cell.style.color           = hTxt;
+            cell.style.fontWeight      = '700';
+          } else {
+            cell.style.backgroundColor = cBg;
+            cell.style.color           = cTxt;
+            cell.style.fontWeight      = 'normal';
+          }
+
+          tr.appendChild(cell);
+        }
+        tbody.appendChild(tr);
+      }
+
+      table.appendChild(tbody);
+
+      // Insérer dans l'éditeur
+      el.appendChild(document.createElement('br'));
+      el.appendChild(table);
+      el.appendChild(document.createElement('br'));
+
+      // Focus sur la première cellule
+      var firstCell = table.querySelector('th, td');
+      if (firstCell) {
+        firstCell.focus();
+        var range = document.createRange();
+        range.selectNodeContents(firstCell);
+        range.collapse(false);
+        var sel = window.getSelection();
+        if (sel) { sel.removeAllRanges(); sel.addRange(range); }
+      }
+
+      el.dispatchEvent(new Event('input'));
+      el.scrollTop = el.scrollHeight;
+    }, 250);
+  };
+
+});
+</script>
 </body>
 </html>

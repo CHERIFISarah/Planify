@@ -327,22 +327,22 @@ function viewDashboard() {
 
 <div class="pg">
 
-  <!-- Stats overlap -->
-  <div class="stats-row">
-    <div class="stat-card stat-rose" onclick="go('notes')">
-      <span class="sc-icon">📝</span>
-      <span class="sc-num">${notes.length}</span>
-      <span class="sc-lbl">Notes</span>
+  <!-- Stats grid animé (maquette style) -->
+  <div class="stats-grid">
+    <div class="sg-card" onclick="go('notes')">
+      <div class="sg-card-ico">📝</div>
+      <div class="sg-card-val" data-target="${notes.length}">0</div>
+      <div class="sg-card-lbl">Notes</div>
     </div>
-    <div class="stat-card stat-gold" onclick="go('calendar')">
-      <span class="sc-icon">📅</span>
-      <span class="sc-num">${todayEv.length}</span>
-      <span class="sc-lbl">Auj.</span>
+    <div class="sg-card" onclick="go('calendar')">
+      <div class="sg-card-ico">📅</div>
+      <div class="sg-card-val" data-target="${todayEv.length}">0</div>
+      <div class="sg-card-lbl">Aujourd'hui</div>
     </div>
-    <div class="stat-card stat-sage" onclick="go('tasks')">
-      <span class="sc-icon">✅</span>
-      <span class="sc-num">${pending}</span>
-      <span class="sc-lbl">Tâches</span>
+    <div class="sg-card" onclick="go('tasks')">
+      <div class="sg-card-ico">✅</div>
+      <div class="sg-card-val" data-target="${pending}">0</div>
+      <div class="sg-card-lbl">Tâches</div>
     </div>
   </div>
 

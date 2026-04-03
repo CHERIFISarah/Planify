@@ -89,11 +89,13 @@ function wellMood() {
 
 // ── ONGLET 2 : Habitudes ──────────────────────────────
 function wellHabits() {
-  const habits = LS.habits();
-  const active = habits.filter(h => h.active);
-  const logs   = LS.habitLogs()[today()] || [];
-  const done   = active.filter(h => logs.includes(h.id)).length;
-  const pct    = active.length ? Math.round(done / active.length * 100) : 0;
+  const habits   = LS.habits();
+  const active   = habits.filter(h => h.active);
+  const td       = today();
+  const allLogs  = LS.habitLogs();
+  const logs     = allLogs[td] || [];
+  const done     = active.filter(h => logs.includes(h.id)).length;
+  const pct      = active.length ? Math.round(done / active.length * 100) : 0;
 
   return `
 <div style="padding:.5rem 0">
@@ -107,12 +109,18 @@ function wellHabits() {
     ? `<div class="empty"><div class="empty-i">🌿</div><p>Aucune habitude active</p></div>`
     : `<div class="card">
         ${active.map(h => {
-          const done = logs.includes(h.id);
-          const streak = habitStreak(h.id);
+          const isDone  = logs.includes(h.id);
+          const streak  = habitStreak(h.id);
+          // Streak dots — 7 derniers jours
+          const dots = Array.from({length:7}, (_,i) => {
+            const ds = addDays(td, i - 6);
+            const ok = (allLogs[ds] || []).includes(h.id);
+            return `<div class="hsd" style="background:${ok ? h.color || 'var(--rose)' : 'rgba(0,0,0,.1)'}"></div>`;
+          }).join('');
           return `
           <div class="habit-row">
-            <div class="habit-check${done?' done':''}" onclick="toggleHabit('${h.id}')"
-              style="${done?'background:'+h.color+';border-color:'+h.color:''}">
+            <div class="habit-check${isDone?' done':''}" onclick="toggleHabit('${h.id}')"
+              style="${isDone?'background:'+h.color+';border-color:'+h.color:''}">
               <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
             </div>
             <div class="habit-info">
@@ -120,6 +128,7 @@ function wellHabits() {
               ${streak > 0
                 ? `<div class="habit-streak">🔥 ${streak} jour${streak>1?'s':''} de suite</div>`
                 : '<div class="habit-streak">Premier jour !</div>'}
+              <div class="habit-streak-dots">${dots}</div>
             </div>
           </div>`;
         }).join('')}
@@ -186,17 +195,51 @@ function wellCycle() {
   const disclaimer = `<div style="font-size:.72rem;color:var(--ts);margin:.75rem 0;line-height:1.5;padding:.65rem;background:var(--pl);border-radius:var(--rs)">
     ℹ️ Les prédictions sont indicatives et ne constituent pas un avis médical.</div>`;
 
+  // ── Ring SVG animé ────────────────────────────────────
+  let cycleRingHtml = '';
+  if (ci) {
+    const totalDays = ci.avgLen || 28;
+    const dayPct    = Math.min(ci.dayOfCycle / totalDays, 1);
+    const rRing     = 45;
+    const circRing  = +(2 * Math.PI * rRing).toFixed(2);
+    const dashRing  = +(dayPct * circRing).toFixed(2);
+    const offRing   = +(circRing * 0.25).toFixed(2);
+    const phR       = CYCLE_PHASES[ci.phase];
+    cycleRingHtml = `
+<div class="cycle-ring-wrap">
+  <div class="cycle-ring-svg">
+    <svg width="110" height="110" viewBox="0 0 110 110">
+      <circle cx="55" cy="55" r="${rRing}" fill="none" stroke="rgba(229,62,90,.12)" stroke-width="7.5"/>
+      <circle cx="55" cy="55" r="${rRing}" fill="none"
+        stroke="url(#cr-grad-${ci.dayOfCycle})" stroke-width="7.5"
+        stroke-dasharray="${dashRing} ${circRing}"
+        stroke-dashoffset="${offRing}"
+        stroke-linecap="round"
+        style="transition:stroke-dasharray .6s ease"/>
+      <defs>
+        <linearGradient id="cr-grad-${ci.dayOfCycle}" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#FFB3C1"/>
+          <stop offset="100%" stop-color="#E53E5A"/>
+        </linearGradient>
+      </defs>
+    </svg>
+    <div class="cycle-ring-inner">
+      <div class="cr-day">${ci.dayOfCycle}</div>
+      <div class="cr-lbl">Jour cycle</div>
+      <div class="cr-phase">${phR.emoji} ${phR.name}</div>
+    </div>
+  </div>
+</div>`;
+  }
+
   return `
-<!-- Stats cycle -->
+<!-- Ring animé + Stats cycle -->
 ${ci ? `
+${cycleRingHtml}
 <div class="cycle-stats-row">
   <div class="cycle-stat">
-    <div class="cycle-stat-n">${ci.dayOfCycle}</div>
-    <div class="cycle-stat-l">Jour du cycle</div>
-  </div>
-  <div class="cycle-stat">
     <div class="cycle-stat-n">${ci.daysUntil > 0 ? ci.daysUntil : '–'}</div>
-    <div class="cycle-stat-l">${ci.daysUntil > 0 ? 'Jours avant règles' : 'Règles en cours'}</div>
+    <div class="cycle-stat-l">${ci.daysUntil > 0 ? 'Avant règles' : 'Règles en cours'}</div>
   </div>
   <div class="cycle-stat">
     <div class="cycle-stat-n">${ci.avgLen}</div>

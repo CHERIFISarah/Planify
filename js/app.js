@@ -30,15 +30,13 @@ function go(page, params = {}) {
   if (!view) return;
 
   // Nav visible uniquement pour les pages principales (cachée pendant onboarding)
-  const mainPages = ['dashboard','notes','calendar','wellness','tasks'];
-  const hideNav   = ['auth','onboarding','editor','settings','subject','list'];
+  const hideNav   = ['auth','onboarding','editor','settings','subject','list','shopping'];
   if (nav) nav.style.display = hideNav.includes(page) ? 'none' : '';
   if (fab) fab.style.display = hideNav.includes(page) ? 'none' : '';
 
   // Éditeur overlay → géré séparément
   if (page === 'editor') {
     view.innerHTML = '';
-    // S'assurer que la nav et le FAB sont cachés dans l'éditeur
     buildEditor();
     return;
   }
@@ -53,7 +51,10 @@ function go(page, params = {}) {
     case 'wellness':  html = viewWellness();   break;
     case 'tasks':     html = viewTasks();      break;
     case 'list':      html = viewList();       break;
+    case 'grades':    html = viewGrades();     break;
+    case 'shopping':  html = viewShopping();   break;
     case 'settings':  html = viewSettings();   break;
+    case 'luna':      html = viewLuna();       break;
     case 'onboarding': html = viewOnboarding(); break;
     case 'auth':       html = viewAuth();       break;
     default:          html = viewDashboard();
@@ -64,6 +65,28 @@ function go(page, params = {}) {
   // Scroll en haut
   view.scrollTop = 0;
 
+  // ── Post-render animations ────────────────────────────
+  requestAnimationFrame(() => {
+    // Compteurs animés stats-grid
+    view.querySelectorAll('.sg-card-val[data-target]').forEach(el => {
+      const target = parseInt(el.dataset.target) || 0;
+      if (target === 0) { el.textContent = '0'; return; }
+      let cur = 0;
+      const inc = Math.max(1, Math.ceil(target / 18));
+      const timer = setInterval(() => {
+        cur = Math.min(cur + inc, target);
+        el.textContent = cur;
+        if (cur >= target) clearInterval(timer);
+      }, 45);
+    });
+    // Scroll bandeau calendrier vers le bouton actif
+    const strip = document.getElementById('cal-strip');
+    if (strip) {
+      const active = strip.querySelector('.cal-day-btn.active');
+      if (active) active.scrollIntoView({ inline: 'center', behavior: 'smooth', block: 'nearest' });
+    }
+  });
+
   // Appliquer les réglages
   const cfg = LS.cfg();
   if (cfg.dark)     document.body.classList.add('dark');
@@ -73,7 +96,8 @@ function go(page, params = {}) {
 function navActive(page) {
   const map = {dashboard:'dashboard',notes:'notes',subject:'notes',
                 calendar:'calendar',wellness:'wellness',
-                tasks:'tasks',list:'tasks'};
+                tasks:'tasks',list:'tasks',shopping:'tasks',
+                grades:'grades'};
   const active = map[page] || page;
   document.querySelectorAll('#nav button').forEach(b => {
     b.classList.toggle('active', b.dataset.p === active);
@@ -128,6 +152,8 @@ function openFAB() {
     else      openSubjectModal();
   } else if (page === 'calendar') {
     openEventModal();
+  } else if (page === 'grades') {
+    openModuleModal();
   } else if (page === 'tasks' || page === 'list') {
     if (_lid) openTaskModal(_lid);
     else      openListModal();
@@ -220,11 +246,12 @@ function openEventModal(dateOrId) {
   const defDate = (isDate && dateOrId)  ? dateOrId : (_selDay || today());
   const id      = ev?.id || '';
 
+  const recVal = ev?.recurrence || 'none';
   openModal(`
 <div class="modal-body">
   <div class="form-group">
     <label class="form-label">Titre</label>
-    <input class="form-input" id="ev-title" type="text" value="${esc(ev?.title||'')}" placeholder="Ex: Examen maths…">
+    <input class="form-input" id="ev-title" type="text" value="${esc(ev?.title||'')}" placeholder="Ex: Tennis de table, Examen…">
   </div>
   <div class="form-row">
     <div class="form-group" style="flex:1">
@@ -255,6 +282,20 @@ function openEventModal(dateOrId) {
     <input type="hidden" id="ev-color" value="${ev?.color||EVCOLORS[0]}">
   </div>
   <div class="form-group">
+    <label class="form-label">🔁 Répétition</label>
+    <select class="setting-select" id="ev-recurrence" style="width:100%"
+      onchange="toggleRecurrenceEnd(this.value)">
+      <option value="none"    ${recVal==='none'   ?'selected':''}>Pas de répétition</option>
+      <option value="daily"   ${recVal==='daily'  ?'selected':''}>Tous les jours</option>
+      <option value="weekly"  ${recVal==='weekly' ?'selected':''}>Toutes les semaines (même jour)</option>
+      <option value="monthly" ${recVal==='monthly'?'selected':''}>Chaque mois (même date)</option>
+    </select>
+  </div>
+  <div class="form-group" id="ev-rec-end-wrap" style="${recVal==='none'?'display:none':''}">
+    <label class="form-label">Date de fin de répétition (optionnel)</label>
+    <input class="form-input" id="ev-rec-end" type="date" value="${ev?.recurrenceEnd||''}">
+  </div>
+  <div class="form-group">
     <label class="form-label">Note (optionnel)</label>
     <textarea class="form-input" id="ev-note" rows="2" placeholder="Infos complémentaires…">${esc(ev?.note||'')}</textarea>
   </div>
@@ -272,19 +313,29 @@ function selEvColor(btn, c) {
   document.getElementById('ev-color').value = c;
 }
 
+function toggleRecurrenceEnd(val) {
+  const w = document.getElementById('ev-rec-end-wrap');
+  if (w) w.style.display = val === 'none' ? 'none' : '';
+}
+
 function saveEvent(id) {
   const title = document.getElementById('ev-title')?.value?.trim();
   const date  = document.getElementById('ev-date')?.value;
   if (!title || !date) { showToast('Titre et date requis'); return; }
+  const rec    = document.getElementById('ev-recurrence')?.value || 'none';
+  const recEnd = document.getElementById('ev-rec-end')?.value    || '';
   const ev = {
-    id:       id || uid(),
+    id:             id || uid(),
     title,
     date,
-    startTime: document.getElementById('ev-start')?.value || '',
-    endTime:   document.getElementById('ev-end')?.value   || '',
-    location:  document.getElementById('ev-loc')?.value?.trim() || '',
-    color:     document.getElementById('ev-color')?.value || EVCOLORS[0],
-    note:      document.getElementById('ev-note')?.value?.trim() || '',
+    startTime:      document.getElementById('ev-start')?.value || '',
+    endTime:        document.getElementById('ev-end')?.value   || '',
+    location:       document.getElementById('ev-loc')?.value?.trim() || '',
+    color:          document.getElementById('ev-color')?.value || EVCOLORS[0],
+    note:           document.getElementById('ev-note')?.value?.trim() || '',
+    recurrence:     rec,
+    recurrenceEnd:  recEnd || null,
+    exceptions:     id ? (LS.events().find(e=>e.id===id)?.exceptions || []) : [],
   };
   const evs = LS.events();
   if (id) {
@@ -302,7 +353,7 @@ function saveEvent(id) {
 // ═══════════════════════════════════════════════════════
 //  MODAL : Humeur
 // ═══════════════════════════════════════════════════════
-const MOOD_LABELS = ['','Excellent','Bien','Neutre','Fatiguée','Difficile','Stressée'];
+const MOOD_LABELS = ['','Excellent','Bien','Neutre','Fatiguée','Difficile','Stressée','Triste'];
 
 function openMoodModal(ds) {
   const moods = LS.moods();
@@ -997,12 +1048,27 @@ async function requestNotifPermission() {
   return p === 'granted';
 }
 
-function sendNotif(title, body, icon = 'icon.svg') {
+// iOS-compatible : utilise le Service Worker pour showNotification
+async function sendNotif(title, body, tag = 'planify') {
   if (Notification.permission !== 'granted') return;
   try {
-    new Notification(title, { body, icon, badge: 'icon.svg', vibrate: [200, 100, 200] });
+    // Méthode préférée : SW showNotification (fonctionne sur iOS 16.4+ PWA)
+    if ('serviceWorker' in navigator) {
+      const reg = await navigator.serviceWorker.ready;
+      await reg.showNotification(title, {
+        body,
+        icon:    './apple-touch-icon-180.png',
+        badge:   './apple-touch-icon-180.png',
+        vibrate: [200, 100, 200],
+        tag,
+      });
+      return;
+    }
+  } catch(e) { /* fallback ci-dessous */ }
+  // Fallback navigateur desktop
+  try {
+    new Notification(title, { body, icon: './apple-touch-icon-180.png', badge: './apple-touch-icon-180.png' });
   } catch(e) {
-    // Fallback : toast in-app
     showToast(`${title} — ${body}`, 4000);
   }
 }
@@ -1060,6 +1126,67 @@ function scheduleEventReminders() {
   });
 }
 
+// Récap du soir — demain : événements + habitudes (21h)
+function scheduleEveningReminder() {
+  const cfg = LS.cfg();
+  if (cfg.notifEvening === false) return;
+  const now    = new Date();
+  const target = 21 * 60; // 21h00
+  const cur    = now.getHours() * 60 + now.getMinutes();
+  const diff   = target - cur;
+  if (diff > 0 && diff < 24 * 60) {
+    setTimeout(async () => {
+      const tomorrow  = addDays(today(), 1);
+      const tmLabel   = fdate(tomorrow, {weekday:'long', day:'numeric', month:'long'});
+      const tmEvents  = [...LS.events(), ...LS.ics()].filter(e => e.date === tomorrow);
+      const habits    = LS.habits().filter(h => h.active);
+      let lines = [];
+      if (tmEvents.length > 0) {
+        lines.push(`📅 ${tmEvents.length} événement${tmEvents.length>1?'s':''} : ${tmEvents.slice(0,3).map(e=>e.title||e.summary||'').join(', ')}`);
+      }
+      if (habits.length > 0) {
+        lines.push(`🌿 ${habits.length} habitude${habits.length>1?'s':''} à cocher demain`);
+      }
+      if (lines.length === 0) lines.push('Rien de prévu, profites-en pour te reposer 🌙');
+      await sendNotif(`🌙 Demain — ${cap(tmLabel)}`, lines.join('\n'), 'planify-evening');
+    }, diff * 60 * 1000);
+  }
+}
+
+// Rappel règles — 2 jours avant prédiction
+function schedulePeriodReminder() {
+  const cfg = LS.cfg();
+  if (cfg.notifPeriod === false) return;
+  const ci = getCycleInfo();
+  if (!ci || ci.daysUntil <= 0) return;
+  if (ci.daysUntil === 2) {
+    // Envoyer maintenant (au boot ce soir/ce matin)
+    const now = new Date();
+    const h = now.getHours();
+    if (h >= 8 && h <= 22) {
+      setTimeout(() => {
+        sendNotif('🌹 Planify — Tes règles approchent',
+          `Dans 2 jours (${fdate(ci.nextPeriod, {day:'numeric',month:'long'})}). Prépare-toi ! 💕`,
+          'planify-period');
+      }, 1000);
+    }
+  } else {
+    // Planifier pour dans (daysUntil-2) jours à 9h
+    const daysAhead = ci.daysUntil - 2;
+    const targetDate = new Date();
+    targetDate.setDate(targetDate.getDate() + daysAhead);
+    targetDate.setHours(9, 0, 0, 0);
+    const diff = targetDate.getTime() - Date.now();
+    if (diff > 0 && diff < 7 * 24 * 60 * 60 * 1000) {
+      setTimeout(() => {
+        sendNotif('🌹 Planify — Tes règles approchent',
+          `Dans 2 jours (${fdate(ci.nextPeriod, {day:'numeric',month:'long'})}). Prépare-toi ! 💕`,
+          'planify-period');
+      }, diff);
+    }
+  }
+}
+
 // Init notifications au boot (après permission)
 async function initNotifications() {
   const cfg = LS.cfg();
@@ -1068,7 +1195,12 @@ async function initNotifications() {
   if (!ok) return;
   scheduleWaterReminders();
   scheduleEventReminders();
+  scheduleEveningReminder();
+  schedulePeriodReminder();
 }
+
+// Alias pour compatibilité avec l'import ICS depuis calendar.js
+function importFile(input) { importICSFile(input); }
 
 // ═══════════════════════════════════════════════════════
 //  Calendrier — navigation vues
@@ -1723,7 +1855,8 @@ function signOutUser() {
     // Vider le localStorage de cette session
     ['pl_subjects','pl_notes','pl_events','pl_ics','pl_moods','pl_habits',
      'pl_hlogs','pl_cycle','pl_cyclecfg','pl_lists','pl_todos','pl_cfg',
-     'pl_water','pl_focus','pl_gratitude','pl_wgoals'].forEach(k =>
+     'pl_water','pl_focus','pl_gratitude','pl_wgoals',
+     'pl_grades','pl_shopping'].forEach(k =>
       localStorage.removeItem(k));
     go('auth');
   });

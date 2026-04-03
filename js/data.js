@@ -10,6 +10,7 @@ const MOODS = [null,
   {e:'🌿',l:'Fatiguée', bg:'#D1FAE5',bc:'#10B981'},
   {e:'🌧️',l:'Difficile',bg:'#BFDBFE',bc:'#3B82F6'},
   {e:'🔥',l:'Stressée', bg:'#FED7AA',bc:'#F97316'},
+  {e:'😢',l:'Triste',   bg:'#E0E7FF',bc:'#6366F1'},
 ];
 
 // ── Palette de couleurs pour sujets / listes ─────────
@@ -223,6 +224,8 @@ const LS = {
   lists:     () => LS.g('pl_lists')     || [],
   todos:     () => LS.g('pl_todos')     || [],
   cfg:       () => LS.g('pl_cfg')       || {},
+  grades:    () => LS.g('pl_grades')    || {s1:[], s2:[]},
+  shopping:  () => LS.g('pl_shopping')  || [],
 };
 
 // ═══════════════════════════════════════════════════════

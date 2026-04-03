@@ -7,12 +7,14 @@ function viewSettings() {
   const isGoogle = auth.currentUser?.providerData?.some(p => p.providerId === 'google.com');
 
   const stats = [
-    ['Notes',     LS.notes().length],
-    ['Sujets',    LS.subjects().length],
-    ['Événements',LS.events().length + LS.ics().length],
-    ['Tâches',    LS.todos().length],
-    ['Humeurs',   Object.keys(LS.moods()).length + ' jours'],
-    ['Logs cycle',LS.cycleLog().length],
+    ['Notes',       LS.notes().length],
+    ['Sujets',      LS.subjects().length],
+    ['Événements',  LS.events().length + LS.ics().length],
+    ['Tâches',      LS.todos().length],
+    ['Humeurs',     Object.keys(LS.moods()).length + ' j'],
+    ['Logs cycle',  LS.cycleLog().length],
+    ['Courses',     LS.shopping().length],
+    ['Modules',     (LS.grades().s1.length + LS.grades().s2.length)],
   ];
 
   return `
@@ -72,16 +74,135 @@ function viewSettings() {
     </select>
   </div>
   <div class="setting-sep"></div>
+  <div>
+    <div class="setting-label" style="margin-bottom:.5rem">🎨 Couleur principale</div>
+    <div class="theme-colors-grid">
+      ${[
+        {name:'Rose',     val:'rose',   colors:['#C4778E','#8C3D58','#FAF0F3']},
+        {name:'Violet',   val:'violet', colors:['#9B8EC4','#6B5B9E','#F2EFFA']},
+        {name:'Bleu',     val:'blue',   colors:['#3B82F6','#1D4ED8','#EFF6FF']},
+        {name:'Vert',     val:'sage',   colors:['#7AA97C','#4A7D4C','#EBF4EB']},
+        {name:'Doré',     val:'gold',   colors:['#C9A96E','#8B6D30','#FDF6E3']},
+        {name:'Corail',   val:'coral',  colors:['#F97316','#C2410C','#FFF7ED']},
+      ].map(t=>`
+      <button class="theme-color-btn ${(cfg.themeColor||'rose')===t.val?'theme-color-active':''}"
+        onclick="setThemeColor('${t.val}','${t.colors[0]}','${t.colors[1]}','${t.colors[2]}')"
+        title="${t.name}" style="background:${t.colors[0]}">
+        <span class="theme-color-check">${(cfg.themeColor||'rose')===t.val?'✓':''}</span>
+      </button>`).join('')}
+    </div>
+    <div class="setting-hint" style="margin-top:.4rem">Thème actuel : ${cfg.themeColor||'Rose'}</div>
+  </div>
+</div>
+
+<!-- Luna IA -->
+<div class="st">Luna IA</div>
+<div class="card">
+  <div class="setting-row">
+    <div>
+      <div class="setting-label">🔊 Son de réponse Luna</div>
+      <div class="setting-hint">Petit son quand Luna répond</div>
+    </div>
+    <label class="toggle">
+      <input type="checkbox" ${cfg.lunaSound!==false?'checked':''} onchange="saveCfgField('lunaSound',this.checked)">
+      <span class="toggle-slider"></span>
+    </label>
+  </div>
+  <div class="setting-sep"></div>
+  <div class="setting-row">
+    <div>
+      <div class="setting-label">💾 Mémoire des conversations</div>
+      <div class="setting-hint">Luna se souvient de l'historique</div>
+    </div>
+    <label class="toggle">
+      <input type="checkbox" ${cfg.lunaMemory!==false?'checked':''} onchange="toggleLunaMemory(this.checked)">
+      <span class="toggle-slider"></span>
+    </label>
+  </div>
+  <div class="setting-sep"></div>
+  <button class="btn btn-ghost btn-full btn-sm" onclick="clearLunaMemory()">
+    🗑️ Effacer l'historique Luna
+  </button>
+</div>
+
+<!-- Widgets Dashboard -->
+<div class="st">Widgets du tableau de bord</div>
+<div class="card">
+  <div class="setting-hint" style="margin-bottom:.75rem">Choisis les widgets à afficher sur ton accueil</div>
+  ${[
+    {key:'widgetWater',    label:'💧 Hydratation',     def:true},
+    {key:'widgetPomodoro', label:'🍅 Minuteur Pomodoro', def:true},
+    {key:'widgetMood',     label:'💗 Humeur du jour',   def:true},
+    {key:'widgetHabits',   label:'🌿 Habitudes',        def:true},
+    {key:'widgetTasks',    label:'✅ Tâches rapides',   def:true},
+    {key:'widgetQuote',    label:'✨ Affirmation',       def:true},
+    {key:'widgetGrades',   label:'🎓 Moyennes rapides', def:false},
+    {key:'widgetCycle',    label:'🌹 Cycle menstruel',  def:true},
+  ].map((w,i,arr) => `
+  <div class="setting-row">
+    <div class="setting-label">${w.label}</div>
+    <label class="toggle">
+      <input type="checkbox" ${cfg[w.key]!==false?'checked':''} onchange="toggleWidget('${w.key}',this.checked)">
+      <span class="toggle-slider"></span>
+    </label>
+  </div>${i<arr.length-1?'<div class="setting-sep"></div>':''}`).join('')}
+</div>
+
+<!-- Notifications -->
+<div class="st">Notifications 🔔</div>
+<div class="card">
+  <div style="font-size:.8rem;color:var(--ts);line-height:1.6;margin-bottom:.75rem;background:var(--pl);padding:.65rem;border-radius:var(--rs)">
+    ℹ️ <strong>iPhone</strong> : installe Planify via <em>Partager → Sur l'écran d'accueil</em> pour activer les notifications.
+    Les notifs fonctionnent quand l'app est ouverte ou en arrière-plan.
+  </div>
+
   <div class="setting-row">
     <div>
       <div class="setting-label">💧 Rappels hydratation</div>
-      <div class="setting-hint">Notifications toutes les ~1h30 pour boire de l'eau</div>
+      <div class="setting-hint">Toutes les ~1h30 pour boire de l'eau</div>
     </div>
     <label class="toggle">
       <input type="checkbox" ${cfg.notifs!==false?'checked':''} onchange="toggleNotifs(this.checked)">
       <span class="toggle-slider"></span>
     </label>
   </div>
+  <div class="setting-sep"></div>
+  <div class="setting-row">
+    <div>
+      <div class="setting-label">🌙 Récap du soir (21h)</div>
+      <div class="setting-hint">Événements et habitudes de demain</div>
+    </div>
+    <label class="toggle">
+      <input type="checkbox" ${cfg.notifEvening!==false?'checked':''} onchange="toggleCfgBool('notifEvening',this.checked)">
+      <span class="toggle-slider"></span>
+    </label>
+  </div>
+  <div class="setting-sep"></div>
+  <div class="setting-row">
+    <div>
+      <div class="setting-label">🌹 Rappel règles (J-2)</div>
+      <div class="setting-hint">Avertissement 2 jours avant tes règles prévues</div>
+    </div>
+    <label class="toggle">
+      <input type="checkbox" ${cfg.notifPeriod!==false?'checked':''} onchange="toggleCfgBool('notifPeriod',this.checked)">
+      <span class="toggle-slider"></span>
+    </label>
+  </div>
+  <div class="setting-sep"></div>
+  <div class="setting-row">
+    <div>
+      <div class="setting-label">📅 Rappel événements (15 min avant)</div>
+      <div class="setting-hint">Alerte 15 min avant chaque événement du jour</div>
+    </div>
+    <label class="toggle">
+      <input type="checkbox" ${cfg.notifEvents!==false?'checked':''} onchange="toggleCfgBool('notifEvents',this.checked)">
+      <span class="toggle-slider"></span>
+    </label>
+  </div>
+  <div class="setting-sep"></div>
+  <button class="btn btn-ghost btn-sm btn-full" onclick="requestNotifNow()">
+    🔔 Activer les notifications maintenant
+  </button>
 </div>
 
 <!-- Calendrier / ICS -->
@@ -209,11 +330,7 @@ function viewSettings() {
 <div class="card" style="text-align:center;padding:1.25rem">
   <div style="font-size:2rem;margin-bottom:.4rem">🌸</div>
   <div style="font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:700;color:var(--p)">Planify</div>
-  <div style="font-size:.8rem;color:var(--ts);margin-top:.2rem">Version 3.0 · Cloud sync</div>
-  <div style="font-size:.78rem;color:var(--ts);margin-top:.75rem;line-height:1.6">
-    Tes données sont synchronisées et chiffrées.<br>
-    Accessibles sur tous tes appareils. 🔒
-  </div>
+  <div style="font-size:.8rem;color:var(--ts);margin-top:.2rem">Version 3.0</div>
 </div>
 
 </div>`;
@@ -250,6 +367,76 @@ function toggleNotifs(on) {
   } else {
     showToast('🔕 Rappels désactivés');
   }
+}
+
+function toggleCfgBool(key, val) {
+  saveCfgField(key, val);
+  showToast(val ? '🔔 Activé ✓' : '🔕 Désactivé');
+}
+
+async function requestNotifNow() {
+  if (!('Notification' in window)) {
+    showToast('❌ Ton navigateur ne supporte pas les notifications');
+    return;
+  }
+  const p = await Notification.requestPermission();
+  if (p === 'granted') {
+    showToast('✅ Notifications autorisées ! 🎉');
+    initNotifications();
+  } else if (p === 'denied') {
+    showToast('❌ Notifications refusées. Active-les dans les Réglages iOS.');
+  } else {
+    showToast('⚠️ Permission en attente');
+  }
+}
+
+function setThemeColor(name, main, dark, light) {
+  const cfg = LS.cfg();
+  cfg.themeColor = name;
+  cfg.themeMain  = main;
+  cfg.themeDark  = dark;
+  cfg.themeLight = light;
+  LS.s('pl_cfg', cfg);
+  applyThemeColor(main, dark, light);
+  go('settings');
+}
+
+function applyThemeColor(main, dark, light) {
+  if (!main) return;
+  const r = document.documentElement;
+  r.style.setProperty('--rose',   main);
+  r.style.setProperty('--rose-d', dark);
+  r.style.setProperty('--rose-l', light);
+  r.style.setProperty('--p',      main);
+  r.style.setProperty('--pl',     light);
+  r.style.setProperty('--pd',     dark);
+  // Rebuild gradients
+  r.style.setProperty('--grad-rose', `linear-gradient(135deg,${main} 0%,${dark} 100%)`);
+  r.style.setProperty('--sh-rose',   `0 6px 22px ${main}60`);
+}
+
+// Applique le thème sauvegardé au démarrage
+(function _applyStoredTheme(){
+  try {
+    const cfg = JSON.parse(localStorage.getItem('pl_cfg')||'{}');
+    if (cfg.themeMain) applyThemeColor(cfg.themeMain, cfg.themeDark, cfg.themeLight);
+  } catch(e){}
+})();
+
+function toggleWidget(key, val) {
+  saveCfgField(key, val);
+  showToast(val ? '✅ Widget activé' : '🔕 Widget désactivé');
+}
+
+function toggleLunaMemory(on) {
+  saveCfgField('lunaMemory', on);
+  if (!on) clearLunaMemory();
+  else showToast('💾 Mémoire Luna activée');
+}
+
+function clearLunaMemory() {
+  try { localStorage.removeItem('luna_history'); } catch(e){}
+  showToast('🗑️ Historique Luna effacé');
 }
 
 function saveCycleCfg(key, val) {
@@ -293,6 +480,8 @@ function exportData() {
     cycleCfg:  LS.cycleCfg(),
     lists:     LS.lists(),
     todos:     LS.todos(),
+    grades:    LS.grades(),
+    shopping:  LS.shopping(),
     cfg:       LS.cfg(),
   };
   const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
@@ -323,6 +512,8 @@ function importData(input) {
       if (d.cycleCfg)  LS.s('pl_cyclecfg',  d.cycleCfg);
       if (d.lists)     LS.s('pl_lists',     d.lists);
       if (d.todos)     LS.s('pl_todos',     d.todos);
+      if (d.grades)    LS.s('pl_grades',    d.grades);
+      if (d.shopping)  LS.s('pl_shopping',  d.shopping);
       if (d.cfg)       LS.s('pl_cfg',       d.cfg);
       showToast('Données restaurées ✓');
       go('dashboard');
@@ -338,7 +529,8 @@ function resetAll() {
   if (!confirm('Effacer TOUTES les données ? Cette action est irréversible.')) return;
   if (!confirm('Es-tu certaine ? Toutes tes notes, tâches et données seront supprimées.')) return;
   ['pl_subjects','pl_notes','pl_events','pl_ics','pl_moods','pl_habits',
-   'pl_hlogs','pl_cycle','pl_cyclecfg','pl_lists','pl_todos','pl_cfg'].forEach(k =>
+   'pl_hlogs','pl_cycle','pl_cyclecfg','pl_lists','pl_todos','pl_cfg',
+   'pl_grades','pl_shopping'].forEach(k =>
     localStorage.removeItem(k));
   showToast('Données effacées');
   go('dashboard');

@@ -1,29 +1,136 @@
 // ═══════════════════════════════════════════════════════
-//  Vue : Agenda — Jour / Semaine / Mois
+//  Vue : Agenda — Jour / Semaine / Mois  (v2 avec récurrence)
 // ═══════════════════════════════════════════════════════
+
+// ── Génère les occurrences des événements récurrents ──
+function getExpandedEvents(from, to) {
+  const base  = LS.events();
+  const ics   = LS.ics().map(e => ({...e, _ics: true}));
+  const result = [];
+
+  // Événements normaux (non récurrents)
+  base.forEach(e => {
+    if (!e.recurrence || e.recurrence === 'none') {
+      if (!from || !to || (e.date >= from && e.date <= to)) result.push(e);
+      return;
+    }
+    // Génère les occurrences dans la plage
+    const end = e.recurrenceEnd || addDays(from||e.date, 366);
+    let cur = e.date;
+    let safety = 0;
+    while (cur <= (to || end) && cur <= end && safety++ < 500) {
+      if (!from || cur >= from) {
+        const excepts = e.exceptions || [];
+        if (!excepts.includes(cur)) {
+          result.push({...e, date: cur, _recBase: e.id, _recDate: cur});
+        }
+      }
+      cur = nextOccurrence(e, cur);
+      if (!cur) break;
+    }
+  });
+
+  // ICS (jamais récurrents)
+  ics.forEach(e => {
+    if (!from || !to || (e.date >= from && e.date <= to)) result.push(e);
+  });
+
+  return result;
+}
+
+function nextOccurrence(e, cur) {
+  if (e.recurrence === 'daily') return addDays(cur, 1);
+  if (e.recurrence === 'weekly') return addDays(cur, 7);
+  if (e.recurrence === 'monthly') {
+    const d = new Date(cur + 'T12:00:00');
+    d.setMonth(d.getMonth() + 1);
+    return d.toISOString().slice(0,10);
+  }
+  return null;
+}
+
+// ── Plage du mois courant ─────────────────────────────
+function monthRange() {
+  const f = `${_cy}-${String(_cm+1).padStart(2,'0')}-01`;
+  const l = new Date(_cy, _cm+1, 0);
+  return [f, l.toISOString().slice(0,10)];
+}
+
+// ── Plage de la semaine ───────────────────────────────
+function weekRange(day) {
+  const base = new Date((day||today())+'T12:00:00');
+  const dow  = base.getDay();
+  base.setDate(base.getDate() + (dow===0?-6:1-dow));
+  return [base.toISOString().slice(0,10), addDays(base.toISOString().slice(0,10), 6)];
+}
+
+// ─────────────────────────────────────────────────────
 function viewCalendar() {
-  const allEv    = [...LS.events(), ...LS.ics()];
   const cycleLog = new Set(LS.cycleLog().filter(e => e.type === 'period').map(e => e.date));
   const cyInfo   = getCycleInfo();
   const td       = today();
+
+  // Récupérer les événements pour la vue courante
+  let allEv;
+  if (_calView === 'month') {
+    const [f, t] = monthRange();
+    allEv = getExpandedEvents(addDays(f,-7), addDays(t,7));
+  } else if (_calView === 'week') {
+    const [f, t] = weekRange(_selDay||td);
+    allEv = getExpandedEvents(f, t);
+  } else if (_calView === 'list') {
+    allEv = getExpandedEvents(td, addDays(td, 90)); // 3 mois
+  } else {
+    allEv = getExpandedEvents(_selDay||td, _selDay||td);
+  }
+  // Auto-coloriser les événements sans couleur
+  allEv = allEv.map(e => {
+    if (!e.color || e.color === 'var(--p)') {
+      const auto = autoEventColor(e.title||e.summary||'');
+      if (auto) return {...e, color: auto};
+    }
+    return e;
+  });
 
   const tabs = `
 <div class="cal-tabs">
   <button class="cal-tab${_calView==='day'  ?' cal-tab-on':''}" onclick="setCalView('day')">Jour</button>
   <button class="cal-tab${_calView==='week' ?' cal-tab-on':''}" onclick="setCalView('week')">Semaine</button>
   <button class="cal-tab${_calView==='month'?' cal-tab-on':''}" onclick="setCalView('month')">Mois</button>
+  <button class="cal-tab${_calView==='list' ?' cal-tab-on':''}" onclick="setCalView('list')">📋 Liste</button>
 </div>`;
 
   let body = '';
   if (_calView === 'day')   body = _renderCalDay(allEv, cycleLog, cyInfo, td);
   if (_calView === 'week')  body = _renderCalWeek(allEv, cycleLog, cyInfo, td);
   if (_calView === 'month') body = _renderCalMonth(allEv, cycleLog, cyInfo, td);
+  if (_calView === 'list')  body = _renderCalList(allEv, td);
+
+  // ── Bandeau horizontal 14 jours ────────────────────
+  const stripBase = addDays(td, -2);
+  const stripItems = Array.from({length:14}, (_,i) => {
+    const ds  = addDays(stripBase, i);
+    const d   = new Date(ds + 'T12:00:00');
+    const dn  = d.getDate();
+    const dowI = (d.getDay() + 6) % 7;
+    const isT  = ds === td;
+    const isSel = ds === (_selDay || td);
+    const hasEv = allEv.some(e => e.date === ds);
+    return `<button class="cal-day-btn${isSel ? ' active' : ''}${isT ? ' today-strip' : ''}"
+      onclick="_selDay='${ds}';setCalView('day')">
+      <span class="cd-label">${DOW1[dowI]}</span>
+      <span class="cd-num">${dn}</span>
+      <span class="cd-dot" style="${hasEv ? '' : 'opacity:0'}"></span>
+    </button>`;
+  }).join('');
+  const dayStrip = `<div class="cal-day-strip" id="cal-strip">${stripItems}</div>`;
 
   return `
 <div class="ph">
   <span class="ph-title">Agenda</span>
   <button class="ph-action" onclick="openEventModal('${td}')" aria-label="Nouvel événement">+</button>
 </div>
+${dayStrip}
 <div class="pg">
   ${tabs}
   ${body}
@@ -50,13 +157,10 @@ function _renderCalDay(allEv, cycleLog, cyInfo, td) {
   const nowM = isToday ? new Date().getMinutes() : 0;
 
   let timeline = '';
-  for (let h = 7; h <= 22; h++) {
+  for (let h = 6; h <= 23; h++) {
     const hStr   = `${String(h).padStart(2,'0')}:00`;
     const isNowH = h === nowH;
-    const hEv    = timedEv.filter(e => {
-      const eH = parseInt((e.startTime || '00').split(':')[0]);
-      return eH === h;
-    });
+    const hEv    = timedEv.filter(e => parseInt((e.startTime||'00').split(':')[0]) === h);
 
     timeline += `
 <div class="tl-row${isNowH?' tl-now-row':''}">
@@ -71,17 +175,17 @@ function _renderCalDay(allEv, cycleLog, cyInfo, td) {
         <div class="tl-ev-meta">
           🕐 ${e.startTime}${e.endTime?' – '+e.endTime:''}
           ${e.location?' · 📍 '+esc(e.location):''}
-          ${e.ics?'<span class="ev-ujm-badge">UJM</span>':''}
+          ${e._ics?'<span class="ev-ujm-badge">ICS</span>':''}
+          ${e._recBase?'<span class="ev-rec-badge">🔁</span>':''}
         </div>
       </div>
-      ${!e.ics?`<button class="tl-ev-del" onclick="delEvent('${e.id}')">🗑️</button>`:''}
+      ${!e._ics ? `<button class="tl-ev-del" onclick="delEventOrOccurrence('${e.id}','${e._recBase||''}','${e.date}')">🗑️</button>` : ''}
     </div>`).join('')}
   </div>
 </div>`;
   }
 
   return `
-<!-- Navigation jour -->
 <div class="cal-day-nav">
   <button class="cal-arr" onclick="navDay('${prev}')">‹</button>
   <div class="cdn-center">
@@ -98,10 +202,10 @@ ${allDayEv.length>0?`
   <div class="ev-card" style="--ec:${e.color||'var(--p)'}">
     <div class="ev-card-strip"></div>
     <div class="ev-card-body">
-      <div class="ev-card-title">${esc(e.title||e.summary||'')}</div>
+      <div class="ev-card-title">${esc(e.title||e.summary||'')}${e._recBase?' 🔁':''}</div>
       ${e.location?`<div class="ev-card-meta"><span>📍 ${esc(e.location)}</span></div>`:''}
     </div>
-    ${!e.ics?`<button class="ev-del-btn" onclick="delEvent('${e.id}')">🗑️</button>`:''}
+    ${!e._ics?`<button class="ev-del-btn" onclick="delEventOrOccurrence('${e.id}','${e._recBase||''}','${e.date}')">🗑️</button>`:''}
   </div>`).join('')}
 </div>`:''}
 
@@ -136,7 +240,6 @@ function _renderCalWeek(allEv, cycleLog, cyInfo, td) {
 
   const fromLbl  = fdate(weekMon,     {day:'numeric', month:'short'});
   const toLbl    = fdate(weekDays[6], {day:'numeric', month:'long'});
-
   const weekEvTotal = weekDays.reduce((s,ds) => s + allEv.filter(e=>e.date===ds).length, 0);
 
   const cols = weekDays.map((ds, i) => {
@@ -159,7 +262,7 @@ function _renderCalWeek(allEv, cycleLog, cyInfo, td) {
     <div class="wv-ev" style="--ec:${e.color||'var(--p)'}">
       <span class="wv-ev-dot"></span>
       <div class="wv-ev-info">
-        <div class="wv-ev-n">${esc((e.title||e.summary||'').slice(0,11))}</div>
+        <div class="wv-ev-n">${esc((e.title||e.summary||'').slice(0,11))}${e._recBase?'🔁':''}</div>
         ${e.startTime?`<div class="wv-ev-t">${e.startTime}</div>`:''}
       </div>
     </div>`).join('')}
@@ -170,7 +273,6 @@ function _renderCalWeek(allEv, cycleLog, cyInfo, td) {
   }).join('');
 
   return `
-<!-- Navigation semaine -->
 <div class="cal-week-nav">
   <button class="cal-arr" onclick="navWeek('${prevMon}')">‹</button>
   <div class="cwn-center">
@@ -179,11 +281,8 @@ function _renderCalWeek(allEv, cycleLog, cyInfo, td) {
   </div>
   <button class="cal-arr" onclick="navWeek('${nextMon}')">›</button>
 </div>
-
 <div class="week-view-grid">${cols}</div>
-
 <div class="wv-hint">👆 Touche un jour pour voir le détail</div>
-
 <div class="wv-fab-row">
   <button class="btn btn-sm btn-ghost btn-full" onclick="openEventModal('${td}')">+ Ajouter un événement</button>
 </div>`;
@@ -193,7 +292,6 @@ function _renderCalWeek(allEv, cycleLog, cyInfo, td) {
 //  Vue Mois — Grille calendrier
 // ═══════════════════════════════════════════════════════
 function _renderCalMonth(allEv, cycleLog, cyInfo, td) {
-  // Predicted period days
   const predictedPeriodDays = new Set();
   if (cyInfo) {
     for (let i = 0; i < (LS.cycleCfg().perLen||5); i++) {
@@ -201,7 +299,7 @@ function _renderCalMonth(allEv, cycleLog, cyInfo, td) {
     }
   }
 
-  // Bande semaine
+  // Bande semaine courante
   const weekStart = (() => {
     const d   = new Date(td+'T12:00:00');
     const dow = d.getDay();
@@ -256,7 +354,7 @@ function _renderCalMonth(allEv, cycleLog, cyInfo, td) {
 </div>`;
   }
 
-  // Panel jour
+  // Panel jour sélectionné
   const panelDay   = _selDay||td;
   const panelEv    = allEv.filter(e=>e.date===panelDay)
                           .sort((a,b)=>(a.startTime||'zzz').localeCompare(b.startTime||'zzz'));
@@ -277,14 +375,14 @@ function _renderCalMonth(allEv, cycleLog, cyInfo, td) {
 <div class="ev-card" style="--ec:${e.color||'var(--p)'}">
   <div class="ev-card-strip"></div>
   <div class="ev-card-body">
-    <div class="ev-card-title">${esc(e.title||e.summary||'')}</div>
+    <div class="ev-card-title">${esc(e.title||e.summary||'')}${e._recBase?' 🔁':''}</div>
     <div class="ev-card-meta">
       <span>🕐 ${t}</span>
       ${e.location?`<span>📍 ${esc(e.location)}</span>`:''}
-      ${e.ics?'<span class="ev-ujm-badge">UJM</span>':''}
+      ${e._ics?'<span class="ev-ujm-badge">ICS</span>':''}
     </div>
   </div>
-  ${!e.ics?`<button class="ev-del-btn" onclick="delEvent('${e.id}')">🗑️</button>`:''}
+  ${!e._ics?`<button class="ev-del-btn" onclick="delEventOrOccurrence('${e.id}','${e._recBase||''}','${e.date}')">🗑️</button>`:''}
 </div>`;
       }).join('');
 
@@ -343,12 +441,13 @@ ${cyInfo?`
   <div class="ev-cards-list">${evCards}</div>
 </div>
 
-<div class="st">Emploi du temps UJM</div>
+<!-- Import ICS -->
+<div class="st">Emploi du temps / ICS</div>
 <div class="ics-zone" onclick="document.getElementById('ics-cal-f').click()">
   <div class="ics-zone-title">📥 Importer un fichier .ics</div>
-  <div class="ics-zone-sub">Télécharge ton EDT sur ADE-UJM puis importe-le ici</div>
+  <div class="ics-zone-sub">Touche ici pour sélectionner ton fichier .ics</div>
 </div>
-<input type="file" id="ics-cal-f" accept=".ics,text/calendar" style="display:none" onchange="importFile(this)">
+<input type="file" id="ics-cal-f" accept=".ics,text/calendar" style="display:none" onchange="importICSFile(this)">
 ${icsCount?`
 <div class="ics-imported-row">
   <span class="txt-soft">✅ ${icsCount} cours importés</span>
@@ -360,13 +459,50 @@ ${icsCount?`
 function calPrev() { _cm--; if (_cm<0){_cm=11;_cy--;} _selDay=null; go('calendar'); }
 function calNext() { _cm++; if (_cm>11){_cm=0;_cy++;} _selDay=null; go('calendar'); }
 function selDay(d) { _selDay = _selDay===d?null:d; go('calendar'); }
-function delEvent(id) { LS.s('pl_events', LS.events().filter(e=>e.id!==id)); go('calendar'); }
+
+function delEvent(id) {
+  LS.s('pl_events', LS.events().filter(e=>e.id!==id)); go('calendar');
+}
+
+// Supprime un événement ou seulement une occurrence récurrente
+function delEventOrOccurrence(id, recBase, date) {
+  if (recBase) {
+    // C'est une occurrence d'un événement récurrent
+    openModal(`
+<div class="modal-body" style="text-align:center">
+  <p style="margin-bottom:1.25rem">Supprimer cet événement récurrent 🔁</p>
+  <div style="display:flex;flex-direction:column;gap:.6rem">
+    <button class="btn" onclick="delSingleOccurrence('${recBase}','${date}')">
+      🗑️ Supprimer ce jour uniquement
+    </button>
+    <button class="btn btn-danger" onclick="delEvent('${recBase}');closeModal()">
+      🗑️ Supprimer toutes les occurrences
+    </button>
+    <button class="btn btn-ghost" onclick="closeModal()">Annuler</button>
+  </div>
+</div>`, 'Supprimer l\'événement');
+  } else {
+    if (confirm('Supprimer cet événement ?')) delEvent(id);
+  }
+}
+
+function delSingleOccurrence(baseId, date) {
+  const evs = LS.events();
+  const ev  = evs.find(e => e.id === baseId);
+  if (ev) {
+    if (!ev.exceptions) ev.exceptions = [];
+    if (!ev.exceptions.includes(date)) ev.exceptions.push(date);
+    LS.s('pl_events', evs);
+  }
+  closeModal();
+  go('calendar');
+}
+
 function clearICS() {
-  if (!confirm('Supprimer tous les cours importés ?')) return;
+  if (!confirm('Supprimer tous les événements importés ?')) return;
   LS.s('pl_ics', []); go('calendar');
 }
 
-// ── Toggle règles depuis agenda ───────────────────────
 function toggleCycleDay(d) {
   const log = LS.cycleLog();
   const idx = log.findIndex(e=>e.date===d&&e.type==='period');
@@ -374,4 +510,99 @@ function toggleCycleDay(d) {
   else log.push({date:d, type:'period', flow:'medium', symptoms:[], note:''});
   LS.s('pl_cycle', log);
   go('calendar');
+}
+
+// ═══════════════════════════════════════════════════════
+//  Couleur automatique par type d'événement
+// ═══════════════════════════════════════════════════════
+function autoEventColor(title) {
+  if (!title) return null;
+  const t = title.toLowerCase();
+  if (/exam|examen|contrôle|controle|partiel|\bds\b|interro|éval|eval|bac/.test(t)) return '#D63355';
+  if (/\bcours\b|\bcm\b|\btd\b|\btp\b|amphi|lecture|séance|seance|magistral/.test(t)) return '#3B82F6';
+  if (/anniversaire|rdv|rendez|sortie|ciné|cinema|concert|fête|soirée|soiree|amis|famille|perso/.test(t)) return '#EC4899';
+  if (/rendu|deadline|remise|dossier|rapport|projet|présentation|soutenance/.test(t)) return '#F97316';
+  if (/médecin|docteur|pharmac|kiné|psy|thérap|sport|yoga|méditation/.test(t)) return '#10B981';
+  return null;
+}
+
+// ═══════════════════════════════════════════════════════
+//  Vue Liste
+// ═══════════════════════════════════════════════════════
+function _renderCalList(allEv, td) {
+  const future = allEv
+    .filter(e => e.date >= td)
+    .sort((a,b) => a.date.localeCompare(b.date) || (a.startTime||'').localeCompare(b.startTime||''));
+
+  if (!future.length) return `
+<div class="day-empty" style="margin:2rem 0">
+  <div class="day-empty-ico">🗓️</div>
+  <div class="day-empty-txt">Aucun événement à venir</div>
+  <button class="btn btn-sm" onclick="openEventModal('${td}')">+ Ajouter un événement</button>
+</div>`;
+
+  const byDate = {};
+  future.forEach(e => { if (!byDate[e.date]) byDate[e.date]=[]; byDate[e.date].push(e); });
+
+  const html = Object.entries(byDate).slice(0,30).map(([date, evs]) => {
+    const diff = Math.round((new Date(date+'T12:00') - new Date(td+'T12:00')) / 86400000);
+    const label = diff === 0 ? "Aujourd'hui 📌" : diff === 1 ? 'Demain ⏭️'
+      : typeof fdate === 'function' ? fdate(date, {weekday:'long', day:'numeric', month:'short'}) : date;
+    const evCards = evs.map(e => {
+      const color = e.color || autoEventColor(e.title||e.summary||'') || 'var(--p)';
+      const t = e.startTime ? `${e.startTime}${e.endTime?' – '+e.endTime:''}` : 'Toute la journée';
+      return `
+<div class="ev-list-card" onclick="_selDay='${date}';setCalView('day')" style="cursor:pointer">
+  <div class="ev-list-strip" style="background:${color}"></div>
+  <div class="ev-list-body">
+    <div class="ev-list-title">${esc(e.title||e.summary||'')}${e._recBase?' 🔁':''}</div>
+    <div class="ev-list-meta">🕐 ${t}${e.location?' · 📍 '+esc(e.location):''}</div>
+  </div>
+  ${!e._ics?`<button class="ev-del-btn" onclick="event.stopPropagation();delEventOrOccurrence('${e.id}','${e._recBase||''}','${date}')">🗑️</button>`:''}
+</div>`;
+    }).join('');
+    return `<div class="ev-list-group"><div class="ev-list-date-hd">${label}</div>${evCards}</div>`;
+  }).join('');
+
+  return `<div class="ev-list-container">${html}</div>`;
+}
+
+// ═══════════════════════════════════════════════════════
+//  Notifications push 30 min avant événement
+// ═══════════════════════════════════════════════════════
+function initCalendarNotifications() {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  if (typeof LS === 'undefined') return;
+  const cfg = LS.cfg();
+  if (cfg.notifEvents === false) return;
+
+  const td = typeof today === 'function' ? today() : new Date().toISOString().slice(0,10);
+  const evs = LS.events ? LS.events() : [];
+  const now = new Date();
+
+  evs.filter(e => e.date === td && e.startTime).forEach(e => {
+    const [hh, mm] = e.startTime.split(':').map(Number);
+    const evTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hh, mm);
+    const notifTime = new Date(evTime.getTime() - 30 * 60 * 1000);
+    const msUntil = notifTime.getTime() - now.getTime();
+    if (msUntil > 0 && msUntil < 8 * 3600 * 1000) {
+      setTimeout(() => {
+        if (Notification.permission === 'granted') {
+          try {
+            new Notification(`⏰ Dans 30 min — ${e.title}`, {
+              body: `📅 ${e.startTime}${e.endTime?' – '+e.endTime:''}${e.location?' · '+e.location:''}`,
+              icon: '/icons/icon-192.png',
+              tag: 'calnotif-' + e.id,
+            });
+          } catch(err) {}
+        }
+      }, msUntil);
+    }
+  });
+}
+
+// Auto-init notifications
+if (typeof document !== 'undefined') {
+  document.addEventListener('DOMContentLoaded', () => setTimeout(initCalendarNotifications, 2500));
+  setInterval(initCalendarNotifications, 3600 * 1000);
 }

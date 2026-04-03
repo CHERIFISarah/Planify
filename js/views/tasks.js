@@ -7,12 +7,24 @@ function viewTasks() {
   const lists = LS.lists();
   const todos = LS.todos();
 
+  const shopCount = LS.shopping().filter(i => !i.checked).length;
+
   return `
 <div class="ph">
   <span class="ph-title">Tâches</span>
   <button class="ph-action" onclick="openListModal()" aria-label="Nouvelle liste">+</button>
 </div>
 <div class="pg">
+
+<!-- Liste de courses rapide -->
+<button class="shop-link-btn" onclick="go('shopping')">
+  <span class="shop-link-btn-ico">🛒</span>
+  <div class="shop-link-btn-txt">
+    <div class="shop-link-btn-title">Liste de courses</div>
+    <div class="shop-link-btn-sub">${shopCount > 0 ? `${shopCount} article${shopCount>1?'s':''} à acheter` : 'Aucun article en attente'}</div>
+  </div>
+  <span class="shop-link-btn-arr">›</span>
+</button>
 
 ${lists.length === 0
   ? `<div class="empty">
