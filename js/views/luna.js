@@ -9,21 +9,6 @@ let _lunaInit      = false;
 let _lunaCtx       = null;   // dernier intent (mémoire courante)
 let _lunaData_     = null;   // cache données (rafraîchi à chaque message)
 let _lunaListening = false;  // microphone actif
-let _lunaSpeechRec = null;   // Web Speech API instance
-let _lunaRevMode   = false;  // Mode révision actif
-let _lunaRevQ      = null;   // Question de révision courante
-let _lunaRevSubj   = null;   // Matière en cours de révision
-
-// ── Chargement mémoire persistante depuis localStorage ─
-(function _loadLunaHistory() {
-  try {
-    const saved = localStorage.getItem('luna_history');
-    if (saved) {
-      const arr = JSON.parse(saved);
-      if (Array.isArray(arr)) _lunaMsgs = arr.slice(-60); // max 60 msgs
-    }
-  } catch(e) {}
-})();
 
 // ── Chips suggestions ─────────────────────────────────
 const _LUNA_CHIPS = [
@@ -35,8 +20,6 @@ const _LUNA_CHIPS = [
   '🌿 Habitudes','🏆 Ma meilleure matière',
   '⚠️ Ma matière la plus faible','⏰ Prochain événement',
   '🔢 Calcul','❓ Aide',
-  '📚 Mode révision','💡 Conseils personnalisés',
-  '📈 Tendance humeur','🎤 Aide-moi à noter quelque chose',
 ];
 
 // ════════════════════════════════════════════════════════
@@ -578,7 +561,7 @@ function _hCycle(q,D,p,now){
 }
 
 function _hHelp(q,D,p,now){
-  return `Tout ce que je sais faire ${p} 🌸 :\n\n📋 **Résumé** → "résumé de ma journée"\n📅 **Planning** → "planning aujourd'hui / demain / semaine"\n⏳ **Countdown** → "dans combien de temps j'ai un exam ?"\n🎓 **Moyennes** → "ma moyenne" · "meilleure matière" · "matière faible"\n🎯 **Valider** → "quelle note pour valider ?"\n✅ **Tâches** → "mes tâches en cours"\n🌿 **Habitudes** → "mes habitudes · série"\n🛒 **Courses** → "ma liste de courses"\n💗 **Humeur** → "comment je me sens ?"\n🌸 **Motivation** → "motive-moi !"\n💆 **Bien-être** → "je suis stressée / épuisée"\n🔢 **Calcul** → "calcule 15 × 8"\n💧 **Eau** → "j'ai bu combien de verres ?"\n🌸 **Citation** → "donne-moi une affirmation"\n⏰ **Prochain événement** → "mon prochain cours"\n\n🆕 **Actions directes :**\n🛒 → "dans mes achats rajoute des pommes"\n📝 → "note que…" ou "crée une note : …"\n⏰ → "rappelle-moi à 18h de réviser les maths"\n✅ → "ajoute une tâche : rendre le devoir"\n📚 → "mode révision" ou "quiz sur les maths"\n💡 → "conseille-moi" · "conseils personnalisés"\n📈 → "tendance humeur cette semaine"\n🔢 → "si j'ai 14 en maths, quelle moyenne ?"\n🎤 → Bouton micro pour parler !\n\n_Je comprends aussi le langage texto : cv, slt, auj, dem…_ 😊\n_Je me souviens de nos conversations 💕_`;
+  return `Tout ce que je sais faire ${p} 🌸 :\n\n📋 **Résumé** → "résumé de ma journée"\n📅 **Planning** → "planning aujourd'hui / demain / semaine"\n⏳ **Countdown** → "dans combien de temps j'ai un exam ?"\n🎓 **Moyennes** → "ma moyenne" · "meilleure matière" · "matière faible"\n🎯 **Valider** → "quelle note pour valider ?"\n✅ **Tâches** → "mes tâches en cours"\n🌿 **Habitudes** → "mes habitudes · série"\n🛒 **Courses** → "ma liste de courses"\n💗 **Humeur** → "comment je me sens ?"\n🌸 **Motivation** → "motive-moi !"\n💆 **Bien-être** → "je suis stressée / épuisée"\n🔢 **Calcul** → "calcule 15 × 8"\n💧 **Eau** → "j'ai bu combien de verres ?"\n🌸 **Citation** → "donne-moi une affirmation"\n⏰ **Prochain événement** → "mon prochain cours"\n\n_Je comprends aussi le langage texto : cv, slt, auj, dem…_ 😊`;
 }
 
 function _hTime(q,D,p,now){
@@ -630,354 +613,97 @@ function _hPomodoro(q,D,p,now){
 }
 
 // ════════════════════════════════════════════════════════
+//  ACTIONS DIRECTES — exécutées avant le NLP
+// ════════════════════════════════════════════════════════
+function _parseTime(str){
+  const m=(str||'').match(/(\d{1,2})[h:](\d{0,2})/i);
+  if(!m) return null;
+  return m[1].padStart(2,'0')+':'+(m[2]||'00').padStart(2,'0');
+}
+
+function _lunaAction(msg,p){
+  // ── Ajouter une note ──────────────────────────────────
+  const noteRx=[
+    /(?:rajoute?|ajoute?|écris?|mets?)\s+(?:sur|dans|une?|que)?\s*(?:mes?\s*)?notes?\s+(?:que\s+)?(.+)/i,
+    /dans?\s+(?:mes?\s*)?notes?\s+(?:rajoute?|ajoute?|note|écris?|mets?)\s+(?:que\s+)?(.+)/i,
+    /note\s+que\s+(.+)/i,
+  ];
+  for(const rx of noteRx){
+    const m=msg.match(rx);
+    if(m&&m[1].trim().length>1){
+      const content=m[1].trim();
+      let subs=LS.subjects();
+      let sub=subs.find(s=>/mémo|memo|luna/i.test(s.name));
+      if(!sub){
+        sub={id:uid(),name:'Mémos Luna',emoji:'🌸',color:PALETTE[0]};
+        LS.s('pl_subjects',[...subs,sub]);
+      }
+      LS.s('pl_notes',[...LS.notes(),{
+        id:uid(),title:content.length>40?content.slice(0,40)+'…':content,
+        content:`<p>${content}</p>`,subjectId:sub.id,
+        createdAt:Date.now(),updatedAt:Date.now()
+      }]);
+      _lunaCtx='notes';
+      return `✅ Note ajoutée **${p}** ! 📝\n\n_"${content}"_\n\nSauvegardée dans **${sub.emoji} ${sub.name}** — retrouve-la dans l'onglet **Notes** !`;
+    }
+  }
+
+  // ── Ajouter à la liste de courses ─────────────────────
+  const shopRx=[
+    /(?:rajoute?|ajoute?|mets?)\s+(.+?)\s+(?:dans?|sur|à|au|aux)\s+(?:mes?\s*)?(?:achats?|courses?|liste(?:\s*de\s*courses?)?|commissions?)/i,
+    /(?:dans?|sur|à|au|aux)\s+(?:mes?\s*)?(?:achats?|courses?|liste(?:\s*de\s*courses?)?)\s+(?:rajoute?|ajoute?|mets?)\s+(.+)/i,
+  ];
+  for(const rx of shopRx){
+    const m=msg.match(rx);
+    if(m&&m[1].trim().length>1){
+      const name=m[1].trim().replace(/^(des?|du|de\s+la|de\s+l'|un[e]?)\s+/i,'');
+      LS.s('pl_shopping',[...LS.shopping(),{id:uid(),name:cap(name),qty:null,unit:'',category:'other',checked:false}]);
+      _lunaCtx='shopping';
+      return `✅ **${cap(name)}** ajouté à tes courses ${p} 🛒\n\nRetrouve ta liste dans l'onglet **Courses** !`;
+    }
+  }
+
+  // ── Ajouter une tâche ─────────────────────────────────
+  const taskRx=[
+    /(?:rajoute?|ajoute?|mets?)\s+(.+?)\s+(?:dans?|à)\s+(?:mes?\s*)?(?:tâches?|todos?|liste\s*(?:de\s*tâches?)?)/i,
+    /(?:dans?|à)\s+(?:mes?\s*)?(?:tâches?|todos?)\s+(?:rajoute?|ajoute?|mets?)\s+(.+)/i,
+    /(?:nouvelle?\s+)?tâche\s*:\s*(.+)/i,
+  ];
+  for(const rx of taskRx){
+    const m=msg.match(rx);
+    if(m&&m[1].trim().length>1){
+      const title=m[1].trim();
+      LS.s('pl_todos',[...LS.todos(),{id:uid(),title:cap(title),done:false,priority:'normal',dueDate:null,createdAt:Date.now()}]);
+      _lunaCtx='tasks';
+      return `✅ Tâche ajoutée **${p}** ! ✅\n\n_"${cap(title)}"_\n\nRetrouve-la dans l'onglet **Tâches** !`;
+    }
+  }
+
+  // ── Créer un rappel / événement ───────────────────────
+  const remRx=[
+    /rappelle?-?moi\s+(?:à\s+(\d{1,2}[h:]\d{0,2})\s+)?(?:de|d'|que\s+(?:je\s+)?(?:dois?|faut?)\s+)?(.+)/i,
+    /crée?\s+un\s+rappel?\s+(?:à\s+(\d{1,2}[h:]\d{0,2})\s+)?(?:pour|de)\s+(.+)/i,
+  ];
+  for(const rx of remRx){
+    const m=msg.match(rx);
+    if(m){
+      const timeStr=m[1]||null;
+      const title=(m[2]||'').trim();
+      if(title.length<2) continue;
+      const time=timeStr?_parseTime(timeStr):'';
+      const ev={id:uid(),title:cap(title),date:_date(0),startTime:time,endTime:'',location:'',color:'#C4778E'};
+      LS.s('pl_events',[...LS.events(),ev]);
+      _lunaCtx='today';
+      return `✅ Rappel créé **${p}** ! ⏰\n\n📅 _"${cap(title)}"_${time?` à **${time}**`:''}\n\nAjouté à ton **Agenda** d'aujourd'hui !`;
+    }
+  }
+
+  return null;
+}
+
+// ════════════════════════════════════════════════════════
 //  POINT D'ENTRÉE — _lunaThink
 // ════════════════════════════════════════════════════════
-// ════════════════════════════════════════════════════════
-//  SMART ACTIONS — détection et exécution d'actions réelles
-// ════════════════════════════════════════════════════════
-function _lunaSmartAction(msg, q, D, p) {
-  // ── Ajouter à la liste de courses ──────────────────
-  // "dans mes achats rajoute des pommes de terre"
-  // "ajoute X dans mes courses" / "ajoute X à la liste"
-  const shoppingPat = /(?:dans mes (?:achats?|courses?)|(?:rajoute|ajoute|met[sz]?|ajouter)\s+(?:des?|un|une|du|les|l[ae'])?\s+(.+?)\s+(?:dans?|à|au[x]?|en)\s+(?:mes\s+)?(?:achats?|courses?|liste))|(?:(?:rajoute|ajoute|ajouter)\s+(?:des?|un|une|du|les|l[ae'])?\s+(.+?)\s+(?:à|dans?|au[x]?)\s+(?:mes\s+)?(?:achats?|courses?|liste(?:\s+de\s+courses?)?))|(?:(?:dans mes achats?|dans mes courses?|dans la liste)\s+(?:rajoute|ajoute|mets?)\s+(?:des?|un|une|du|les|l[ae'])?\s+(.+))/i;
-  let shM = msg.match(shoppingPat);
-  if (!shM) {
-    // pattern simple : "rajoute pommes de terre dans mes achats"
-    const s2 = msg.match(/(?:rajoute|ajoute|ajouter)\s+(?:des?|un|une|du)?\s*(.+?)\s+(?:dans?|à|au[x]?)\s+(?:mes\s+)?(?:achats?|courses?|liste)/i);
-    if (s2) shM = s2;
-    // pattern: "dans mes achats rajoute pommes de terre"
-    const s3 = msg.match(/dans mes (?:achats?|courses?)\s+(?:rajoute|ajoute|mets?)\s+(?:des?|un|une|du|les?)?\s*(.+)/i);
-    if (s3) shM = s3;
-  }
-  if (shM) {
-    const itemName = (shM[1]||shM[2]||shM[3]||'').trim().replace(/\s*[.,!?]+$/, '');
-    if (itemName.length > 1) {
-      const shop = LS.shopping();
-      const newItem = { id: Date.now().toString(36), name: itemName, qty: '', unit: '', category: '', checked: false };
-      shop.push(newItem);
-      LS.s('pl_shopping', shop);
-      return `✅ J'ai ajouté **"${itemName}"** à ta liste de courses ${p} 🛒\n\nTa liste a maintenant **${shop.filter(i=>!i.checked).length} article${shop.filter(i=>!i.checked).length>1?'s':''}** à acheter.`;
-    }
-  }
-
-  // ── Créer une note ─────────────────────────────────
-  // "note que..." / "dans notes, note que..." / "crée une note : ..."
-  const notePat = /(?:note(?:\s+que)?|dans\s+(?:mes\s+)?notes?\s+(?:note|écris?|mets?)\s+(?:que)?|crée une note\s*:?|prends une note\s*:?)\s+(.+)/i;
-  const noteM = msg.match(notePat);
-  if (noteM) {
-    const content = noteM[1].trim();
-    if (content.length > 2) {
-      const subjects = LS.subjects();
-      const notes = LS.notes();
-      // Cherche un sujet "Mémo" ou "Général" ou prend le premier
-      let sid = subjects.find(s => /mémo|memo|général|general|divers/i.test(s.name))?.id
-             || subjects[0]?.id;
-      if (!sid && subjects.length === 0) {
-        // Crée un sujet par défaut
-        const newSub = { id: uid(), name: 'Mémos', emoji: '📝', color: { dot:'var(--rose)', bg:'var(--rose-l)' } };
-        subjects.push(newSub);
-        LS.s('pl_subjects', subjects);
-        sid = newSub.id;
-      }
-      if (sid) {
-        const newNote = { id: uid(), subjectId: sid, title: content.slice(0, 50), content: `<p>${content}</p>`, createdAt: Date.now(), updatedAt: Date.now() };
-        notes.push(newNote);
-        LS.s('pl_notes', notes);
-        return `✅ Note créée ${p} 📝\n\n**"${content.slice(0,60)}${content.length>60?'…':''}"**\n\nTu peux la retrouver dans l'onglet **Notes**.`;
-      }
-    }
-  }
-
-  // ── Rappel / Créer événement ───────────────────────
-  // "rappelle-moi à 18h de réviser les maths"
-  // "rappelle-moi demain à 9h de..."
-  const rappelPat = /rappelle[- ]?(?:moi|le|la|nous)?\s+(?:(aujourd'?hui|demain|lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche)\s+)?à\s+(\d{1,2})h?(?::?(\d{2}))?\s+(?:de\s+|d[''])?(.+)/i;
-  const rappelM = msg.match(rappelPat);
-  if (rappelM) {
-    const dayWord = (rappelM[1]||'').toLowerCase();
-    const hh = rappelM[2].padStart(2,'0');
-    const mm = (rappelM[3]||'00').padStart(2,'0');
-    const what = (rappelM[4]||'').trim().replace(/\s*[.,!?]+$/, '');
-    const now2 = new Date();
-    let evDate = now2.toISOString().slice(0,10);
-    if (dayWord === 'demain') {
-      const d = new Date(now2); d.setDate(d.getDate()+1);
-      evDate = d.toISOString().slice(0,10);
-    } else if (['lundi','mardi','mercredi','jeudi','vendredi','samedi','dimanche'].includes(dayWord)) {
-      const dowMap = {lundi:1,mardi:2,mercredi:3,jeudi:4,vendredi:5,samedi:6,dimanche:0};
-      const target = dowMap[dayWord];
-      const d = new Date(now2);
-      const cur = d.getDay();
-      let diff = target - cur; if (diff <= 0) diff += 7;
-      d.setDate(d.getDate()+diff);
-      evDate = d.toISOString().slice(0,10);
-    }
-    const evs = LS.events();
-    const newEv = { id: uid(), title: what || 'Rappel', date: evDate, startTime: `${hh}:${mm}`, endTime: '', location: '', color: 'var(--rose)', recurrence: 'none' };
-    evs.push(newEv);
-    LS.s('pl_events', evs);
-    const dayLabel2 = dayWord === 'demain' ? 'demain' : dayWord || "aujourd'hui";
-    return `✅ Rappel créé ${p} ! ⏰\n\n**"${what}"**\n📅 ${dayLabel2.charAt(0).toUpperCase()+dayLabel2.slice(1)} à **${hh}h${mm==='00'?'':mm}**\n\nTu le retrouveras dans ton **Agenda** 🗓️`;
-  }
-
-  // ── Ajouter une tâche ──────────────────────────────
-  // "ajoute [tâche] à mes tâches" / "ajoute une tâche : ..."
-  const taskPat = /(?:ajoute(?:r)?\s+(?:une\s+)?(?:tâche|tache)\s*:?\s+(.+)|ajoute(?:r)?\s+(.+?)\s+(?:dans?|à)\s+(?:mes\s+)?(?:tâches?|taches?|todo)|mets?\s+(.+?)\s+(?:dans?|à)\s+(?:mes\s+)?(?:tâches?|taches?))/i;
-  const taskM = msg.match(taskPat);
-  if (taskM) {
-    const title = (taskM[1]||taskM[2]||taskM[3]||'').trim().replace(/\s*[.,!?]+$/, '');
-    if (title.length > 1) {
-      const todos = LS.todos ? LS.todos() : (JSON.parse(localStorage.getItem('pl_todos')||'[]'));
-      const newTask = { id: uid(), title, done: false, priority: 'normal', dueDate: null, createdAt: Date.now() };
-      todos.push(newTask);
-      LS.s('pl_todos', todos);
-      return `✅ Tâche ajoutée ${p} ! 📋\n\n**"${title}"**\n\nTu peux la voir et la cocher dans l'onglet **Tâches** ✅`;
-    }
-  }
-
-  // ── Mode révision ──────────────────────────────────
-  // "mode révision" / "lance une révision de maths"
-  const revPat = /(?:mode\s+révision|lance(?:r)?\s+(?:une\s+)?révision|quiz\s+(?:de\s+|sur\s+)?(.+)|révise(?:r)?\s+(?:avec|les?)?\s*(.+)|pose(?:r)?[\- ]moi\s+des\s+questions\s+(?:sur|de)\s+(.+))/i;
-  const revM = msg.match(revPat);
-  if (revM && !_lunaRevMode) {
-    const subjHint = (revM[1]||revM[2]||revM[3]||'').trim();
-    return _hStartRevision(subjHint, D, p);
-  }
-
-  // ── Analyse humeur cette semaine ───────────────────
-  const moodTrendPat = /(?:comment\s+(?:évolue|va)\s+mon\s+humeur|tendance\s+(?:de\s+)?(?:mon\s+)?humeur|humeur\s+(?:cette\s+)?semaine|bilan\s+humeur|analyse\s+humeur)/i;
-  if (moodTrendPat.test(msg)) {
-    return _hMoodTrend(D, p);
-  }
-
-  // ── Conseil personnalisé ───────────────────────────
-  const advicePat = /(?:conseil|conseille[- ]moi|que\s+(?:dois[\- ]je|devrais[\- ]je)\s+faire|comment\s+(?:progresser|améliorer|travailler|mieux\s+travailler)|aide[\- ]moi\s+à\s+(?:progresser|m'organiser|travailler))/i;
-  if (advicePat.test(msg)) {
-    return _hPersonalizedAdvice(D, p);
-  }
-
-  // ── Simulation de note ────────────────────────────
-  // "si j'ai 14 à l'examen, quelle sera ma moyenne"
-  const simPat = /si\s+(?:j[''e]\s+(?:ai?|obtiens?|prends?))\s+(\d+(?:[.,]\d+)?)\s+(?:à|en|au|sur\s+20)?\s*(.+?)(?:\s*,\s*(?:quelle|quel|ma)\s+(?:sera|serait)\s+(?:ma\s+)?moyenne)?/i;
-  const simM = msg.match(simPat);
-  if (simM && (msg.includes('moyenne') || msg.includes('examen') || msg.includes('exam'))) {
-    const grade = parseFloat(simM[1].replace(',','.'));
-    const subjName = simM[2]?.trim() || '';
-    return _hGradeSimulation(grade, subjName, D, p);
-  }
-
-  return null; // Pas d'action détectée
-}
-
-// ── Mode révision ─────────────────────────────────────
-function _hStartRevision(subjHint, D, p) {
-  _lunaRevMode = true;
-  const subs = D.subjects;
-  if (!subs.length) {
-    _lunaRevMode = false;
-    return `Tu n'as pas encore de matières ${p} 📚\nCrée tes sujets dans l'onglet **Notes** d'abord !`;
-  }
-  // Cherche la matière correspondante
-  let sub = null;
-  if (subjHint) {
-    sub = subs.find(s => s.name.toLowerCase().includes(subjHint.toLowerCase()) || subjHint.toLowerCase().includes(s.name.toLowerCase()));
-  }
-  if (!sub) sub = subs[Math.floor(Math.random()*subs.length)];
-  _lunaRevSubj = sub;
-  return _lunaNextQuestion(sub, D, p);
-}
-
-function _lunaNextQuestion(sub, D, p) {
-  // Questions génériques de révision basées sur la matière
-  const notes = D.notes.filter(n => n.subjectId === sub.id);
-  const genericQs = [
-    `📚 **Mode révision — ${sub.emoji||''} ${sub.name}**\n\nQuestion 1 : Explique-moi en 2-3 phrases le concept principal que tu as étudié récemment en **${sub.name}**. Prends le temps de bien formuler ta réponse !`,
-    `🎯 Question pour **${sub.name}** :\n\nSi tu devais résumer le chapitre le plus important de **${sub.name}** à quelqu'un qui ne connaît rien, que dirais-tu ?`,
-    `💡 Question de révision — **${sub.name}** :\n\nQuels sont les 3 points clés que tu dois absolument retenir pour l'examen de **${sub.name}** ?`,
-    `🔍 Test de mémoire — **${sub.name}** :\n\nSans regarder tes notes, donne-moi une définition ou formule importante de **${sub.name}**. Sois le plus précise possible !`,
-  ];
-  const q = notes.length > 0
-    ? `📖 **Mode révision — ${sub.emoji||''} ${sub.name}**\n\nTu as **${notes.length} note${notes.length>1?'s':''}** dans cette matière.\n\nQuestion : Explique-moi en tes propres mots le sujet principal de ta dernière note. Qu'as-tu appris récemment en **${sub.name}** ?`
-    : genericQs[Math.floor(Math.random()*genericQs.length)];
-  _lunaRevQ = { sub, asked: Date.now() };
-  return q + '\n\n_Réponds librement — je t\'évaluerai et poserai la prochaine question !_\n_Tape "stop révision" pour arrêter._';
-}
-
-function _lunaHandleRevision(msg, D, p) {
-  const q = _norm(msg);
-  if (/(stop|arrête|fini|terminé|quitter|exit|stop révision)/.test(q)) {
-    _lunaRevMode = false; _lunaRevQ = null; _lunaRevSubj = null;
-    return `Super session de révision ${p} ! 🎉\nContinue comme ça, tu vas cartonner à tes examens 💪\n\nAutre chose que je peux faire pour toi ?`;
-  }
-  // Évalue la réponse (analyse simple)
-  const wordCount = msg.trim().split(/\s+/).length;
-  let feedback = '';
-  if (wordCount < 5) {
-    feedback = `Ta réponse est un peu courte ${p} 🤔 Développe davantage ! Essaie d'expliquer avec plus de détails.`;
-  } else if (wordCount < 15) {
-    feedback = `Bien ${p} ! ✨ Tu commences à bien cerner le concept. Peux-tu donner un exemple concret ?`;
-  } else {
-    const positives = [`Excellent ${p} ! 🏆 Ta réponse est développée et structurée !`, `Très bien ${p} ⭐ ! Tu maîtrises bien ce sujet !`, `Super réponse ${p} ! 💕 Je vois que tu as bien étudié !`];
-    feedback = positives[Math.floor(Math.random()*positives.length)];
-  }
-  // Pose une nouvelle question
-  const sub = _lunaRevSubj;
-  if (!sub) { _lunaRevMode = false; return feedback; }
-  const nextQs = [
-    `\n\n📚 **Prochaine question — ${sub.name}** :\n\nDonne-moi un exemple d'application pratique d'un concept de **${sub.name}**. Comment l'utiliserais-tu dans la vraie vie ?`,
-    `\n\n🎯 **Question suivante** :\n\nQuelle est la partie de **${sub.name}** qui te semble la plus difficile ? Explique pourquoi.`,
-    `\n\n💡 **Question bonus** :\n\nSi tu avais un examen demain en **${sub.name}**, qu'est-ce que tu réviserais EN PRIORITÉ ? Pourquoi ?`,
-    `\n\n🔍 **Test rapide** :\n\nCite 3 termes techniques importants de **${sub.name}** et donne leur définition rapide.`,
-  ];
-  const next = nextQs[Math.floor(Math.random()*nextQs.length)];
-  return `${feedback}${next}\n\n_Tape "stop révision" pour terminer la session._`;
-}
-
-// ── Analyse de tendance d'humeur ──────────────────────
-function _hMoodTrend(D, p) {
-  const moods = D.moods;
-  const days = Array.from({length:7}, (_,i) => {
-    const d = new Date(); d.setDate(d.getDate()-i);
-    return d.toISOString().slice(0,10);
-  }).reverse();
-
-  const moodOrder = { 'Excellent':5,'Bien':4,'Neutre':3,'Fatiguée':2,'Stressée':1,'Difficile':1,'Triste':1 };
-  const moodEmojis = { 'Excellent':'😄','Bien':'😊','Neutre':'😐','Fatiguée':'😴','Stressée':'😰','Difficile':'😟','Triste':'😢' };
-
-  const entries = days.map(d => ({ date: d, entry: moods[d] })).filter(x => x.entry);
-  if (entries.length === 0) {
-    return `Tu n'as pas encore enregistré ton humeur cette semaine ${p} 🌸\nVa dans **Bien-être** pour noter tes humeurs — ça m'aide à t'aider mieux !`;
-  }
-
-  const MOOD_DEF = typeof MOODS !== 'undefined' ? MOODS : {};
-  const chart = days.map(d => {
-    const e = moods[d];
-    if (!e) return `  ${d.slice(5)} │ ─ ─ ─ ─ ─ ─`;
-    const moodLabel = MOOD_DEF[e.mood]?.l || e.mood || '?';
-    const score = moodOrder[moodLabel] || 3;
-    const bar = '█'.repeat(score) + '░'.repeat(5-score);
-    const em = moodEmojis[moodLabel] || '😐';
-    return `  ${d.slice(5)} │ ${bar} ${em} ${moodLabel}`;
-  }).join('\n');
-
-  const scores = entries.map(x => {
-    const ml = MOOD_DEF[x.entry.mood]?.l || x.entry.mood || 'Neutre';
-    return moodOrder[ml] || 3;
-  });
-  const avg = scores.reduce((a,b)=>a+b,0)/scores.length;
-  let trend = '';
-  if (scores.length >= 2) {
-    const firstHalf = scores.slice(0, Math.floor(scores.length/2));
-    const secondHalf = scores.slice(Math.floor(scores.length/2));
-    const avgFirst = firstHalf.reduce((a,b)=>a+b,0)/firstHalf.length;
-    const avgSecond = secondHalf.reduce((a,b)=>a+b,0)/secondHalf.length;
-    if (avgSecond > avgFirst + 0.3) trend = '\n\n📈 **Tendance positive** — ton humeur s\'améliore cette semaine ! 🌸';
-    else if (avgSecond < avgFirst - 0.3) trend = '\n\n📉 **Tendance à la baisse** — tu sembles moins bien en fin de semaine. Prends soin de toi 💕';
-    else trend = '\n\n➡️ **Humeur stable** cette semaine.';
-  }
-  const avgLabel = avg >= 4.5 ? 'Excellent' : avg >= 3.5 ? 'Bien' : avg >= 2.5 ? 'Neutre' : 'Difficile';
-  return `💗 **Tendance d'humeur — 7 derniers jours ${p}**\n\n\`\`\`\n${chart}\n\`\`\`\n\nMoyenne de la semaine : **${avgLabel}** (${avg.toFixed(1)}/5)${trend}`;
-}
-
-// ── Conseils personnalisés ────────────────────────────
-function _hPersonalizedAdvice(D, p) {
-  const a2 = _avgPartial(D.grades.s2);
-  const pend = D.tasks.filter(t=>!t.done).length;
-  const urgent = D.tasks.filter(t=>!t.done&&t.priority==='high').length;
-  const actH = D.habits.filter(h=>h.active);
-  const td = _date(0);
-  const doneH = actH.filter(h=>(D.hlogs[td]||[]).includes(h.id));
-  const mo = _mood(D.moods, td);
-  const mods = [...D.grades.s1||[], ...D.grades.s2||[]];
-  const withAvg = mods.map(m=>({m,a:typeof moduleAverage==='function'?moduleAverage(m):null})).filter(x=>x.a!==null).sort((a,b)=>a.a-b.a);
-  const worst = withAvg[0];
-
-  let advice = `🎯 **Conseils personnalisés pour toi ${p}** :\n\n`;
-  const tips = [];
-
-  if (a2 !== null && a2 < 10) {
-    tips.push(`📚 Ta moyenne S2 est à **${a2.toFixed(2)}/20** — sous la barre de 10. Concentre-toi sur les matières clés !`);
-  } else if (a2 !== null && a2 >= 14) {
-    tips.push(`🏆 Excellente moyenne S2 de **${a2.toFixed(2)}/20** ! Continue sur cette lancée.`);
-  }
-  if (worst && worst.a < 10) {
-    tips.push(`⚠️ **${worst.m.name}** est ta matière la plus faible (${worst.a.toFixed(2)}/20). Consacre-lui au moins **30 min/jour** cette semaine.`);
-  }
-  if (urgent > 0) {
-    tips.push(`🔴 Tu as **${urgent} tâche${urgent>1?'s':''} urgente${urgent>1?'s':''}** — commence par là avant tout le reste !`);
-  } else if (pend > 5) {
-    tips.push(`✅ **${pend} tâches** en attente — utilise la règle **2 minutes** : si ça prend < 2 min, fais-le maintenant !`);
-  }
-  if (actH.length > 0 && doneH.length < actH.length/2) {
-    tips.push(`🌿 Tu as fait seulement **${doneH.length}/${actH.length} habitudes** aujourd'hui. La régularité est la clé !`);
-  }
-  if (mo && (mo.l === 'Fatiguée' || mo.l === 'Stressée')) {
-    tips.push(`😴 Tu te sens **${mo.l}** — priorise ton énergie. Fais d'abord **une seule chose importante** puis repose-toi.`);
-  }
-  if (D.water < 4 && new Date().getHours() >= 14) {
-    tips.push(`💧 Seulement **${D.water} verres** d'eau — la déshydratation réduit la concentration de 20% !`);
-  }
-
-  if (!tips.length) {
-    tips.push(`✨ Tu gères super bien ${p} ! Continue à maintenir tes habitudes et ton rythme de travail.`);
-    tips.push(`📅 Consulte ton planning régulièrement et anticipe les deadlines importantes.`);
-  }
-
-  advice += tips.map((t,i)=>`**${i+1}.** ${t}`).join('\n\n');
-  advice += `\n\n_Tape "mode révision" pour t'entraîner sur une matière_ 📚`;
-  return advice;
-}
-
-// ── Simulation de note ────────────────────────────────
-function _hGradeSimulation(newGrade, subjName, D, p) {
-  const mods = D.grades.s2 || [];
-  if (!mods.length) return `Aucune note S2 enregistrée ${p} 📊\nAjoute tes matières dans **Moyennes** d'abord !`;
-
-  if (newGrade < 0 || newGrade > 20) return `La note doit être entre 0 et 20 ${p} 😊`;
-
-  // Cherche la matière si précisée
-  let targetMod = null;
-  if (subjName) {
-    targetMod = mods.find(m => m.name.toLowerCase().includes(subjName.toLowerCase()));
-  }
-
-  if (targetMod) {
-    // Simulation pour une matière précise
-    const currentAvg = typeof moduleAverage === 'function' ? moduleAverage(targetMod) : null;
-    const simMods = mods.map(m => {
-      if (m.id !== targetMod.id) return m;
-      const simM = JSON.parse(JSON.stringify(m));
-      if (simM.submodules && simM.submodules.length > 0) {
-        // Met la note sur le premier sous-module sans note
-        const empty = simM.submodules.find(s => s.grade === null || s.grade === undefined || s.grade === '');
-        if (empty) empty.grade = newGrade;
-        else simM.submodules[simM.submodules.length-1].grade = newGrade;
-      } else {
-        simM.grade = newGrade;
-      }
-      return simM;
-    });
-    let tc=0,tp=0,hasAll=true;
-    simMods.forEach(m => {
-      const a = typeof moduleAverage === 'function' ? moduleAverage(m) : null;
-      if (a === null) { hasAll=false; return; }
-      tc += m.coef||1; tp += a*(m.coef||1);
-    });
-    const newSemAvg = (hasAll && tc > 0) ? tp/tc : null;
-    return `🔢 **Simulation de note ${p}** :\n\nSi tu obtiens **${newGrade}/20** en **${targetMod.name}** :\n\n• Matière actuelle : ${currentAvg!==null?currentAvg.toFixed(2)+'/20':'–'}\n• Avec ${newGrade}/20 → matière = ${newGrade.toFixed(2)}/20\n${newSemAvg!==null?`• Nouvelle moyenne S2 estimée : **${newSemAvg.toFixed(2)}/20** ${_gradeEmoji(newSemAvg)}\n  _(${_mention(newSemAvg)})_`:'⚠️ Des notes manquent encore pour calculer la moyenne globale.'}\n\n${newSemAvg!==null&&newSemAvg>=10?'✅ Tu validerais le semestre !':'💪 Continue, tu peux y arriver !'}`;
-  } else {
-    // Simulation générique
-    let tc=0,tp=0,hasAll=mods.length>0;
-    mods.forEach(m => {
-      const a = typeof moduleAverage === 'function' ? moduleAverage(m) : null;
-      if (a === null) { hasAll=false; return; }
-      tc+=m.coef||1; tp+=a*(m.coef||1);
-    });
-    const current = (hasAll && tc>0) ? tp/tc : null;
-    return `🔢 **Simulation** :\n\nMoyenne S2 actuelle : **${current!==null?current.toFixed(2)+'/20':'notes incomplètes'}**\n\nPour simuler l'impact d'une note précise, dis-moi par exemple :\n_"Si j'ai 14 en Maths, quelle sera ma moyenne ?"_\n\n${current!==null&&current<10?`💪 Il te faut **${(10-current).toFixed(2)} points** supplémentaires pour valider !`:''}`;
-  }
-}
-
 function _lunaThink(msg){
   const now=new Date();
   const q=_norm(msg);
@@ -985,12 +711,13 @@ function _lunaThink(msg){
   const raw=D.cfg.prenom||D.cfg.name||'';
   const p=raw?raw.split(' ')[0]:'toi';
 
-  // 0. Mode révision en cours
-  if (_lunaRevMode) return _lunaHandleRevision(msg, D, p);
+  // 0. Actions directes (note / courses / tâche / rappel)
+  const actR=_lunaAction(msg,p);
+  if(actR) return actR;
 
-  // 0b. Smart actions (avant tout)
-  const smartReply = _lunaSmartAction(msg, q, D, p);
-  if (smartReply) return smartReply;
+  // 0b. Expression mathématique pure (ex: 5*5/6.5+2468)
+  if(/^[\d\s+\-*/^().,÷×%]+$/.test(msg.trim())&&/\d/.test(msg)&&/[+\-*/÷×^]/.test(msg))
+    return _hCalc(q,D,p,now);
 
   // 1. Contexte conversationnel
   const ctxR=_ctxReply(q,D,p,now);
@@ -1055,17 +782,7 @@ function sendLunaQuick(text){
   _lunaAsk(clean||text);
 }
 
-function clearLunaChat(){
-  _lunaMsgs=[]; _lunaInit=false; _lunaCtx=null;
-  _lunaRevMode=false; _lunaRevQ=null; _lunaRevSubj=null;
-  try { localStorage.removeItem('luna_history'); } catch(e){}
-  go('luna');
-}
-
-// ── Sauvegarde mémoire persistante ────────────────────
-function _saveLunaHistory(){
-  try { localStorage.setItem('luna_history', JSON.stringify(_lunaMsgs.slice(-60))); } catch(e){}
-}
+function clearLunaChat(){ _lunaMsgs=[]; _lunaInit=false; _lunaCtx=null; go('luna'); }
 
 function _lunaAsk(msg){
   _lunaMsgs.push({role:'user',text:msg,ts:_lunaTs()});
@@ -1076,76 +793,8 @@ function _lunaAsk(msg){
     const reply=_lunaThink(msg);
     _lunaTyping=false;
     _lunaMsgs.push({role:'luna',text:reply,ts:_lunaTs()});
-    _saveLunaHistory();
     _refreshMsgs();
-    _lunaPlaySound();
   },delay);
-}
-
-// ── Son de notification (AudioContext) ────────────────
-function _lunaPlaySound(){
-  try {
-    const cfg = LS.cfg();
-    if (cfg.lunaSound === false) return;
-    const ctx = new (window.AudioContext||window.webkitAudioContext)();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain); gain.connect(ctx.destination);
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(880, ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(660, ctx.currentTime + 0.12);
-    gain.gain.setValueAtTime(0.08, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
-    osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + 0.25);
-    setTimeout(()=>ctx.close(), 400);
-  } catch(e){}
-}
-
-// ── Microphone / Voice Input ──────────────────────────
-function toggleLunaMic(){
-  const btn = document.getElementById('luna-mic-btn');
-  if (_lunaListening) {
-    _lunaListening = false;
-    if (_lunaSpeechRec) { try { _lunaSpeechRec.stop(); } catch(e){} _lunaSpeechRec = null; }
-    if (btn) { btn.classList.remove('mic-active'); btn.title = 'Parler à Luna'; }
-    return;
-  }
-  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-    showToast('🎤 Reconnaissance vocale non supportée par ce navigateur');
-    return;
-  }
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  const rec = new SR();
-  rec.lang = 'fr-FR';
-  rec.interimResults = false;
-  rec.maxAlternatives = 1;
-  rec.onstart = () => {
-    _lunaListening = true;
-    if (btn) { btn.classList.add('mic-active'); btn.title = 'Arrêter'; }
-    showToast('🎤 Je t\'écoute…');
-  };
-  rec.onresult = e => {
-    const txt = e.results[0][0].transcript;
-    const inp = document.getElementById('luna-input');
-    if (inp) inp.value = txt;
-    _lunaListening = false;
-    if (btn) { btn.classList.remove('mic-active'); btn.title = 'Parler à Luna'; }
-    _lunaAsk(txt);
-  };
-  rec.onerror = () => {
-    _lunaListening = false;
-    _lunaSpeechRec = null;
-    if (btn) { btn.classList.remove('mic-active'); btn.title = 'Parler à Luna'; }
-    showToast('🎤 Erreur microphone');
-  };
-  rec.onend = () => {
-    _lunaListening = false;
-    _lunaSpeechRec = null;
-    if (btn) { btn.classList.remove('mic-active'); btn.title = 'Parler à Luna'; }
-  };
-  _lunaSpeechRec = rec;
-  rec.start();
 }
 
 // ════════════════════════════════════════════════════════
@@ -1154,33 +803,26 @@ function toggleLunaMic(){
 function viewLuna(){
   if(!_lunaInit){
     _lunaInit=true;
-    // Si l'historique est vide (première fois ou après clear), envoie le message de bienvenue
-    if (_lunaMsgs.length === 0) {
-      setTimeout(()=>{
-        const D=_getData();
-        const raw=D.cfg.prenom||D.cfg.name||'';
-        const p=raw?raw.split(' ')[0]:'';
-        const pn=p?` **${p}**`:'';
-        const h=new Date().getHours();
-        const s=h<5?'Bonne nuit':h<12?'Bonjour':h<18?'Bon après-midi':'Bonsoir';
-        const td=_date(0);
-        const evs=D.events.filter(e=>e.date===td);
-        const pend=D.tasks.filter(t=>!t.done).length;
-        let ctx='';
-        if(evs.length) ctx+=` Tu as **${evs.length} événement${evs.length>1?'s':''}** aujourd'hui.`;
-        if(pend)       ctx+=` **${pend} tâche${pend>1?'s':''}** en attente.`;
-        _lunaMsgs.push({
-          role:'luna',
-          text:`${s}${pn} ! Je suis **Luna** 🌸, ton assistante personnelle.${ctx}\n\nJe comprends le français naturel, le langage texto (_cv, slt, auj_…) et j'accède à toutes tes données — **100% hors ligne et privé** 🔒\n\nJe me souviens de nos conversations 💕 Tape _"aide"_ pour voir tout ce que je sais faire !`,
-          ts:_lunaTs()
-        });
-        _saveLunaHistory();
-        _refreshMsgs();
-      },300);
-    } else {
-      // Historique existant - affiche directement sans re-render après délai
-      setTimeout(()=>_refreshMsgs(), 50);
-    }
+    setTimeout(()=>{
+      const D=_getData();
+      const raw=D.cfg.prenom||D.cfg.name||'';
+      const p=raw?raw.split(' ')[0]:'';
+      const pn=p?` **${p}**`:'';
+      const h=new Date().getHours();
+      const s=h<5?'Bonne nuit':h<12?'Bonjour':h<18?'Bon après-midi':'Bonsoir';
+      const td=_date(0);
+      const evs=D.events.filter(e=>e.date===td);
+      const pend=D.tasks.filter(t=>!t.done).length;
+      let ctx='';
+      if(evs.length) ctx+=` Tu as **${evs.length} événement${evs.length>1?'s':''}** aujourd'hui.`;
+      if(pend)       ctx+=` **${pend} tâche${pend>1?'s':''}** en attente.`;
+      _lunaMsgs.push({
+        role:'luna',
+        text:`${s}${pn} ! Je suis **Luna** 🌸, ton assistante personnelle.${ctx}\n\nJe comprends le français naturel, le langage texto (_cv, slt, auj_…) et j'accède à toutes tes données — **100% hors ligne et privé** 🔒\n\nComment puis-je t'aider ?`,
+        ts:_lunaTs()
+      });
+      _refreshMsgs();
+    },300);
   }
 
   return `
@@ -1211,10 +853,8 @@ function viewLuna(){
         <div class="luna-cap"><span>🌸</span>Motivation</div>
         <div class="luna-cap"><span>🔢</span>Calculs</div>
         <div class="luna-cap"><span>💆</span>Bien-être</div>
-        <div class="luna-cap"><span>🛒</span>Courses</div>
-        <div class="luna-cap"><span>🎤</span>Vocal</div>
-        <div class="luna-cap"><span>📚</span>Révision</div>
-        <div class="luna-cap"><span>💡</span>Conseils</div>
+        <div class="luna-cap"><span>⏳</span>Countdown</div>
+        <div class="luna-cap"><span>🏆</span>Matières</div>
       </div>
     </div>
     <div id="luna-msgs"></div>
@@ -1232,16 +872,8 @@ function viewLuna(){
 </div>
 
 <div class="luna-bar">
-  <button class="luna-mic-btn" id="luna-mic-btn" onclick="toggleLunaMic()" title="Parler à Luna">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-      <rect x="9" y="2" width="6" height="11" rx="3"/>
-      <path d="M19 10a7 7 0 01-14 0"/>
-      <line x1="12" y1="19" x2="12" y2="22"/>
-      <line x1="8" y1="22" x2="16" y2="22"/>
-    </svg>
-  </button>
   <textarea class="luna-input" id="luna-input" rows="1"
-    placeholder="Écris ou parle… ex: rappelle-moi à 18h · ajoute des pommes 🌸"
+    placeholder="Écris en français… ex: cv ? · motive moi · calcule 15×8 🌸"
     onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendLunaMsg()}"
     oninput="this.style.height='';this.style.height=Math.min(this.scrollHeight,120)+'px'"
     autocomplete="off"></textarea>
