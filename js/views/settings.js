@@ -73,79 +73,6 @@ function viewSettings() {
       <option value="xlarge" ${cfg.fontSize==='xlarge'?'selected':''}>Très grand</option>
     </select>
   </div>
-  <div class="setting-sep"></div>
-  <div>
-    <div class="setting-label" style="margin-bottom:.5rem">🎨 Couleur principale</div>
-    <div class="theme-colors-grid">
-      ${[
-        {name:'Rose',     val:'rose',   colors:['#C4778E','#8C3D58','#FAF0F3']},
-        {name:'Violet',   val:'violet', colors:['#9B8EC4','#6B5B9E','#F2EFFA']},
-        {name:'Bleu',     val:'blue',   colors:['#3B82F6','#1D4ED8','#EFF6FF']},
-        {name:'Vert',     val:'sage',   colors:['#7AA97C','#4A7D4C','#EBF4EB']},
-        {name:'Doré',     val:'gold',   colors:['#C9A96E','#8B6D30','#FDF6E3']},
-        {name:'Corail',   val:'coral',  colors:['#F97316','#C2410C','#FFF7ED']},
-      ].map(t=>`
-      <button class="theme-color-btn ${(cfg.themeColor||'rose')===t.val?'theme-color-active':''}"
-        onclick="setThemeColor('${t.val}','${t.colors[0]}','${t.colors[1]}','${t.colors[2]}')"
-        title="${t.name}" style="background:${t.colors[0]}">
-        <span class="theme-color-check">${(cfg.themeColor||'rose')===t.val?'✓':''}</span>
-      </button>`).join('')}
-    </div>
-    <div class="setting-hint" style="margin-top:.4rem">Thème actuel : ${cfg.themeColor||'Rose'}</div>
-  </div>
-</div>
-
-<!-- Luna IA -->
-<div class="st">Luna IA</div>
-<div class="card">
-  <div class="setting-row">
-    <div>
-      <div class="setting-label">🔊 Son de réponse Luna</div>
-      <div class="setting-hint">Petit son quand Luna répond</div>
-    </div>
-    <label class="toggle">
-      <input type="checkbox" ${cfg.lunaSound!==false?'checked':''} onchange="saveCfgField('lunaSound',this.checked)">
-      <span class="toggle-slider"></span>
-    </label>
-  </div>
-  <div class="setting-sep"></div>
-  <div class="setting-row">
-    <div>
-      <div class="setting-label">💾 Mémoire des conversations</div>
-      <div class="setting-hint">Luna se souvient de l'historique</div>
-    </div>
-    <label class="toggle">
-      <input type="checkbox" ${cfg.lunaMemory!==false?'checked':''} onchange="toggleLunaMemory(this.checked)">
-      <span class="toggle-slider"></span>
-    </label>
-  </div>
-  <div class="setting-sep"></div>
-  <button class="btn btn-ghost btn-full btn-sm" onclick="clearLunaMemory()">
-    🗑️ Effacer l'historique Luna
-  </button>
-</div>
-
-<!-- Widgets Dashboard -->
-<div class="st">Widgets du tableau de bord</div>
-<div class="card">
-  <div class="setting-hint" style="margin-bottom:.75rem">Choisis les widgets à afficher sur ton accueil</div>
-  ${[
-    {key:'widgetWater',    label:'💧 Hydratation',     def:true},
-    {key:'widgetPomodoro', label:'🍅 Minuteur Pomodoro', def:true},
-    {key:'widgetMood',     label:'💗 Humeur du jour',   def:true},
-    {key:'widgetHabits',   label:'🌿 Habitudes',        def:true},
-    {key:'widgetTasks',    label:'✅ Tâches rapides',   def:true},
-    {key:'widgetQuote',    label:'✨ Affirmation',       def:true},
-    {key:'widgetGrades',   label:'🎓 Moyennes rapides', def:false},
-    {key:'widgetCycle',    label:'🌹 Cycle menstruel',  def:true},
-  ].map((w,i,arr) => `
-  <div class="setting-row">
-    <div class="setting-label">${w.label}</div>
-    <label class="toggle">
-      <input type="checkbox" ${cfg[w.key]!==false?'checked':''} onchange="toggleWidget('${w.key}',this.checked)">
-      <span class="toggle-slider"></span>
-    </label>
-  </div>${i<arr.length-1?'<div class="setting-sep"></div>':''}`).join('')}
 </div>
 
 <!-- Notifications -->
@@ -288,6 +215,29 @@ function viewSettings() {
   </div>
 </div>
 
+<!-- Luna IA -->
+<div class="st">Luna IA 🌸</div>
+<div class="card">
+  <div style="font-size:.8rem;color:var(--ts);line-height:1.6;margin-bottom:.75rem;background:var(--pl);padding:.65rem;border-radius:var(--rs)">
+    ✨ <strong>Mode intelligent (optionnel)</strong> : entre ta clé API Claude pour que Luna réponde avec l'intelligence de l'IA Claude. Sans clé, Luna fonctionne 100% hors ligne.
+  </div>
+  <div class="setting-row">
+    <div>
+      <div class="setting-label">🔑 Clé API Claude</div>
+      <div class="setting-hint">Depuis <strong>console.anthropic.com</strong></div>
+    </div>
+  </div>
+  <div style="margin-top:.5rem;display:flex;gap:.5rem;align-items:center">
+    <input class="setting-input" type="password" id="claude-key-in"
+      value="${esc(cfg.claudeApiKey||'')}"
+      placeholder="sk-ant-…"
+      style="flex:1;font-size:.8rem"
+      oninput="saveCfgField('claudeApiKey',this.value)">
+    <button class="btn btn-sm btn-ghost" onclick="document.getElementById('claude-key-in').type=document.getElementById('claude-key-in').type==='password'?'text':'password'">👁</button>
+  </div>
+  ${cfg.claudeApiKey?`<div style="font-size:.75rem;color:#7AA97C;margin-top:.4rem">✅ Clé configurée — Luna est en mode intelligent !</div>`:`<div style="font-size:.75rem;color:var(--ts);margin-top:.4rem">Sans clé : Luna locale · Avec clé : Luna niveau Claude ✨</div>`}
+</div>
+
 <!-- Données -->
 <div class="st">Mes données</div>
 <div class="card">
@@ -388,55 +338,6 @@ async function requestNotifNow() {
   } else {
     showToast('⚠️ Permission en attente');
   }
-}
-
-function setThemeColor(name, main, dark, light) {
-  const cfg = LS.cfg();
-  cfg.themeColor = name;
-  cfg.themeMain  = main;
-  cfg.themeDark  = dark;
-  cfg.themeLight = light;
-  LS.s('pl_cfg', cfg);
-  applyThemeColor(main, dark, light);
-  go('settings');
-}
-
-function applyThemeColor(main, dark, light) {
-  if (!main) return;
-  const r = document.documentElement;
-  r.style.setProperty('--rose',   main);
-  r.style.setProperty('--rose-d', dark);
-  r.style.setProperty('--rose-l', light);
-  r.style.setProperty('--p',      main);
-  r.style.setProperty('--pl',     light);
-  r.style.setProperty('--pd',     dark);
-  // Rebuild gradients
-  r.style.setProperty('--grad-rose', `linear-gradient(135deg,${main} 0%,${dark} 100%)`);
-  r.style.setProperty('--sh-rose',   `0 6px 22px ${main}60`);
-}
-
-// Applique le thème sauvegardé au démarrage
-(function _applyStoredTheme(){
-  try {
-    const cfg = JSON.parse(localStorage.getItem('pl_cfg')||'{}');
-    if (cfg.themeMain) applyThemeColor(cfg.themeMain, cfg.themeDark, cfg.themeLight);
-  } catch(e){}
-})();
-
-function toggleWidget(key, val) {
-  saveCfgField(key, val);
-  showToast(val ? '✅ Widget activé' : '🔕 Widget désactivé');
-}
-
-function toggleLunaMemory(on) {
-  saveCfgField('lunaMemory', on);
-  if (!on) clearLunaMemory();
-  else showToast('💾 Mémoire Luna activée');
-}
-
-function clearLunaMemory() {
-  try { localStorage.removeItem('luna_history'); } catch(e){}
-  showToast('🗑️ Historique Luna effacé');
 }
 
 function saveCycleCfg(key, val) {

@@ -757,6 +757,70 @@ function _lunaThink(msg){
 }
 
 // ════════════════════════════════════════════════════════
+//  CLAUDE API — IA Intelligente
+// ════════════════════════════════════════════════════════
+async function _callClaudeAPI(msg, D, p, apiKey){
+  const now=new Date();
+  const td=_date(0);
+
+  // Contexte utilisateur enrichi pour le system prompt
+  const evs=D.events.filter(e=>e.date===td).sort((a,b)=>(a.startTime||'').localeCompare(b.startTime||''));
+  const pend=D.tasks.filter(t=>!t.done).slice(0,5);
+  const mo=_mood(D.moods,td);
+  const a2=_avgPartial(D.grades.s2);
+  const shopRem=D.shopping.filter(i=>!i.checked).slice(0,5);
+  const actH=D.habits.filter(h=>h.active);
+  const doneH=actH.filter(h=>(D.hlogs[td]||[]).includes(h.id));
+
+  const sysPrompt=`Tu es Luna, l'assistante IA personnelle de ${p} dans l'application Planify.
+Tu es chaleureuse, bienveillante, intelligente et tu tutois toujours ${p} (prénom féminin).
+Tu réponds en français, de façon concise (3-6 phrases). Tu peux utiliser des emojis (🌸✨💕💪📅🎓).
+Tu utilises **gras** et _italique_ pour le formatage Markdown.
+Tu connais TOUTES les données de ${p} — utilise-les pour des réponses personnalisées et pertinentes.
+
+═══ DONNÉES DE ${p.toUpperCase()} ═══
+📅 Aujourd'hui : ${now.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})} à ${now.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}
+📅 Événements du jour : ${evs.length?evs.map(e=>`${e.startTime?e.startTime+' ':''}"${e.title}"`).join(', '):'Aucun'}
+✅ Tâches en attente : ${pend.length?pend.map(t=>'"'+t.title+'"').join(', '):'Aucune'}
+🎓 Moyenne S2 : ${a2!==null?a2.toFixed(2)+'/20 ('+_mention(a2)+')':'Non renseignée'}
+💗 Humeur aujourd'hui : ${mo?mo.l+' '+mo.e:'Non enregistrée'}
+🌿 Habitudes : ${doneH.length}/${actH.length} faites aujourd'hui
+💧 Eau : ${D.water}/8 verres
+🛒 Courses à faire : ${shopRem.length?shopRem.map(i=>i.name).join(', '):'Rien'}
+
+Si ${p} te demande d'ajouter quelque chose (note, course, tâche, rappel), dis-lui simplement que c'est fait avec enthousiasme — l'action a déjà été exécutée automatiquement avant de t'appeler.
+Ne propose jamais d'aller dans les paramètres pour configurer quoi que ce soit.
+Réponds toujours à la question posée directement, sans intro inutile.`;
+
+  // Historique de conversation (10 derniers messages)
+  const history=_lunaMsgs.slice(-10).map(m=>({
+    role: m.role==='user'?'user':'assistant',
+    content: m.text
+  }));
+  // Ajouter le message actuel
+  history.push({role:'user',content:msg});
+
+  const res=await fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{
+      'Content-Type':'application/json',
+      'x-api-key':apiKey,
+      'anthropic-version':'2023-06-01',
+      'anthropic-dangerous-direct-browser-access':'true',
+    },
+    body:JSON.stringify({
+      model:'claude-haiku-4-5-20251001',
+      max_tokens:600,
+      system:sysPrompt,
+      messages:history,
+    })
+  });
+  if(!res.ok) throw new Error('API error '+res.status);
+  const data=await res.json();
+  return data.content[0].text;
+}
+
+// ════════════════════════════════════════════════════════
 //  RENDU UI
 // ════════════════════════════════════════════════════════
 function _lunaMd(t){
@@ -784,15 +848,47 @@ function sendLunaQuick(text){
 
 function clearLunaChat(){ _lunaMsgs=[]; _lunaInit=false; _lunaCtx=null; go('luna'); }
 
-function _lunaAsk(msg){
+async function _lunaAsk(msg){
   _lunaMsgs.push({role:'user',text:msg,ts:_lunaTs()});
   _lunaTyping=true;
   _refreshMsgs();
+
+  const D=_getData();
+  const raw=D.cfg.prenom||D.cfg.name||'';
+  const p=raw?raw.split(' ')[0]:'toi';
+  const apiKey=(D.cfg.claudeApiKey||'').trim();
+
+  // Si clé API configurée → Luna intelligente via Claude
+  if(apiKey){
+    // Actions directes d'abord (offline, pas besoin d'API)
+    const actR=_lunaAction(msg,p);
+    if(actR){
+      _lunaTyping=false;
+      _lunaMsgs.push({role:'luna',text:actR,ts:_lunaTs()});
+      _refreshMsgs();
+      return;
+    }
+    try{
+      const reply=await _callClaudeAPI(msg,D,p,apiKey);
+      _lunaTyping=false;
+      _lunaMsgs.push({role:'luna',text:reply,ts:_lunaTs()});
+      _refreshMsgs();
+    }catch(e){
+      _lunaTyping=false;
+      const fb=e.message.includes('401')?
+        `Clé API invalide **${p}** 🔑\nVérifie-la dans **Réglages** !`:
+        _lunaThink(msg);
+      _lunaMsgs.push({role:'luna',text:fb,ts:_lunaTs()});
+      _refreshMsgs();
+    }
+    return;
+  }
+
+  // Sans clé API → NLP local 100% hors ligne
   const delay=250+Math.random()*300;
   setTimeout(()=>{
-    const reply=_lunaThink(msg);
     _lunaTyping=false;
-    _lunaMsgs.push({role:'luna',text:reply,ts:_lunaTs()});
+    _lunaMsgs.push({role:'luna',text:_lunaThink(msg),ts:_lunaTs()});
     _refreshMsgs();
   },delay);
 }
