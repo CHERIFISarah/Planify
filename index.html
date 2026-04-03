@@ -87,26 +87,28 @@
     <button class="tb-btn" onclick="fmtBlock('ul')"      title="Liste à puces">• —</button>
     <button class="tb-btn" onclick="fmtBlock('ol')"      title="Liste numérotée">1.</button>
     <div class="tb-sep"></div>
+    <label class="tb-btn tb-color" title="Couleur du texte">
+      <span id="tb-color-preview" style="display:inline-block;width:14px;height:3px;background:#C4778E;border-radius:2px;margin-bottom:1px"></span>
+      A
+      <input type="color" id="tb-color-in" value="#C4778E" style="position:absolute;opacity:0;width:0;height:0"
+        oninput="fmtColor(this.value)" onchange="fmtColor(this.value)">
+    </label>
+    <select class="tb-select" title="Taille du texte" onchange="fmtSize(this.value);this.value=''">
+      <option value="" disabled selected>A↕</option>
+      <option value="11px">Petit</option>
+      <option value="14px">Normal</option>
+      <option value="18px">Grand</option>
+      <option value="24px">Titre</option>
+      <option value="32px">Gros titre</option>
+    </select>
+    <div class="tb-sep"></div>
     <button class="tb-btn" onclick="insertTable()"       title="Tableau">⊞</button>
     <button class="tb-btn" onclick="insertImage()"       title="Image">🖼</button>
     <button class="tb-btn" onclick="fmtBlock('blockquote')" title="Citation">❝</button>
-    <div class="tb-sep"></div>
-    <button class="tb-btn tb-highlight-y" onclick="applyHighlight('#FFE066')" title="Surligner jaune">A</button>
-    <button class="tb-btn tb-highlight-p" onclick="applyHighlight('#FFB3D9')" title="Surligner rose">A</button>
-    <div class="tb-sep"></div>
-    <button class="tb-btn" onclick="exportNotePDF()" title="Exporter en PDF">PDF</button>
     <input type="file" id="img-file-in" accept="image/*" style="display:none" onchange="handleImageFile(this)">
   </div>
   <div class="ed-body">
     <input id="e-title" type="text" placeholder="Titre…">
-    <!-- Tags -->
-    <div class="ed-tags-row" id="ed-tags-row">
-      <div class="ed-tags-list" id="ed-tags-list"></div>
-      <input class="ed-tags-input" id="ed-tags-input" type="text"
-        placeholder="#exam #important…"
-        onkeydown="handleTagInput(event)"
-        autocomplete="off">
-    </div>
     <div id="e-content" contenteditable="true" data-placeholder="Commence à écrire…"></div>
   </div>
 </div>

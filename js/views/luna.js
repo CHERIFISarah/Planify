@@ -570,8 +570,9 @@ function _hTime(q,D,p,now){
   return `Nous sommes le **${fmt}** et il est **${hh}** ${p} 🕐`;
 }
 
-function _hCalc(q,D,p,now){
-  const raw=q.replace(/calcule|combien fait|combien|résoud|math/gi,'').trim();
+function _hCalc(q,D,p,now,rawMsg){
+  const src=rawMsg||q;
+  const raw=src.replace(/calcule|combien fait|combien|résoud|math/gi,'').trim();
   const expr=raw.replace(/×/g,'*').replace(/÷/g,'/').replace(/,/g,'.').replace(/[^0-9+\-*/^().% ]/g,'').trim();
   if(!expr||expr.length<1) return `Donne-moi un calcul ${p} ! 🔢\nEx: _"calcule 15 × 8"_, _"combien fait 100 ÷ 4"_, _"25 % de 200"_`;
   if(!(/\d/.test(expr))) return `Je n'ai pas compris l'expression ${p} 🤔 Essaie : _"calcule 12 × 8"_`;
@@ -717,7 +718,7 @@ function _lunaThink(msg){
 
   // 0b. Expression mathématique pure (ex: 5*5/6.5+2468)
   if(/^[\d\s+\-*/^().,÷×%]+$/.test(msg.trim())&&/\d/.test(msg)&&/[+\-*/÷×^]/.test(msg))
-    return _hCalc(q,D,p,now);
+    return _hCalc(q,D,p,now,msg);
 
   // 1. Contexte conversationnel
   const ctxR=_ctxReply(q,D,p,now);
@@ -736,7 +737,7 @@ function _lunaThink(msg){
     time:_hTime, calc:_hCalc, water:_hWater, quote:_hQuote,
     pomodoro:_hPomodoro,
   };
-  if(it&&map[it]) return map[it](q,D,p,now);
+  if(it&&map[it]) return it==='calc'?_hCalc(q,D,p,now,msg):map[it](q,D,p,now);
 
   // 3. Fallback intelligent — suggère selon les données
   _lunaCtx=null;
