@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Planify — Maquettes Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,500&family=Inter:wght@300;400;500;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Inter',sans-serif; background:#0a0a0a; color:#fff; min-height:100vh; }
+
+/* ── Switcher UI ── */
+.switcher {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 999;
+  display: flex; align-items: center; justify-content: center; gap: .5rem;
+  padding: .75rem 1rem;
+  background: rgba(10,10,10,.92);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255,255,255,.08);
+}
+.sw-label { font-size: .7rem; font-weight: 600; color: rgba(255,255,255,.4); letter-spacing: .08em; text-transform: uppercase; margin-right: .5rem; }
+.sw-btn {
+  padding: .4rem 1rem; border-radius: 999px; border: 1.5px solid rgba(255,255,255,.15);
+  background: transparent; color: rgba(255,255,255,.55); font-size: .75rem; font-weight: 600;
+  cursor: pointer; transition: all .22s; letter-spacing: .02em;
+}
+.sw-btn.active { color: #fff; border-color: transparent; }
+.sw-btn[data-m="1"].active { background: linear-gradient(135deg,#C93070,#E0719A); box-shadow: 0 4px 18px rgba(201,48,112,.45); }
+.sw-btn[data-m="2"].active { background: linear-gradient(135deg,#7C3AED,#EC4899); box-shadow: 0 4px 18px rgba(124,58,237,.45); }
+.sw-btn[data-m="3"].active { background: linear-gradient(135deg,#0EA5E9,#D946EF); box-shadow: 0 4px 18px rgba(14,165,233,.35); }
+
+.mockup { display: none; padding-top: 54px; min-height: 100vh; }
+.mockup.active { display: block; }
+
+/* ═══════════════════════════════════════════
+   MAQUETTE 1 — "Velvet Rose"
+   Inspiré Linear · dark profond · rose chaud
+═══════════════════════════════════════════ */
+#m1 {
+  background: #0F080B;
+  background-image:
+    radial-gradient(ellipse 80% 60% at 90% 5%,  rgba(201,48,112,.28) 0%, transparent 55%),
+    radial-gradient(ellipse 60% 50% at  5% 95%,  rgba(160,40,90,.18) 0%, transparent 55%),
+    radial-gradient(ellipse 50% 40% at 50% 50%, rgba(255,180,210,.05) 0%, transparent 65%);
+}
+#m1 .phone {
+  width: 340px; max-width: calc(100vw - 2rem);
+  margin: 2rem auto;
+  background: #120A0D;
+  border-radius: 36px;
+  border: 1px solid rgba(255,255,255,.07);
+  box-shadow:
+    0 0 0 8px rgba(255,255,255,.03),
+    0 40px 120px rgba(0,0,0,.8),
+    0 0 80px rgba(201,48,112,.12);
+  overflow: hidden;
+  min-height: 720px;
+  position: relative;
+}
+/* Header */
+#m1 .hd {
+  padding: 1.25rem 1.25rem .85rem;
+  display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid rgba(255,255,255,.05);
+  background: rgba(18,10,13,.95);
+  backdrop-filter: blur(20px);
+}
+#m1 .hd-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.3rem; font-weight: 700;
+  background: linear-gradient(135deg, #F472B6 0%, #E0719A 50%, #FBBF24 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+#m1 .hd-pill {
+  background: rgba(201,48,112,.15);
+  border: 1px solid rgba(201,48,112,.3);
+  border-radius: 999px; padding: .28rem .75rem;
+  font-size: .72rem; font-weight: 600; color: #F472B6;
+}
+/* Page content */
+#m1 .pg { padding: 1rem 1.1rem 5rem; }
+
+/* Hero greeting */
+#m1 .hero {
+  background: linear-gradient(145deg, rgba(201,48,112,.18) 0%, rgba(30,10,18,.6) 100%);
+  border: 1px solid rgba(201,48,112,.2);
+  border-radius: 20px; padding: 1.1rem 1.2rem;
+  margin-bottom: .85rem; position: relative; overflow: hidden;
+}
+#m1 .hero::before {
+  content: ''; position: absolute; top: -30px; right: -30px;
+  width: 120px; height: 120px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(244,114,182,.25), transparent 70%);
+}
+#m1 .hero-sub { font-size: .7rem; color: rgba(244,114,182,.7); font-weight: 600; letter-spacing: .08em; text-transform: uppercase; margin-bottom: .35rem; }
+#m1 .hero-name { font-family: 'Playfair Display',serif; font-size: 1.5rem; font-weight: 700; color: #fff; line-height: 1.2; }
+#m1 .hero-mood { margin-top: .65rem; font-size: .78rem; color: rgba(255,255,255,.5); }
+#m1 .hero-mood span { color: #F472B6; font-weight: 600; }
+
+/* Section title */
+#m1 .st {
+  font-size: .62rem; font-weight: 700; letter-spacing: .12em;
+  text-transform: uppercase; color: rgba(255,255,255,.3);
+  margin: 1rem 0 .5rem;
+  display: flex; align-items: center; gap: .5rem;
+}
+#m1 .st::after {
+  content: ''; flex: 1; height: 1px;
+  background: linear-gradient(to right, rgba(201,48,112,.3), transparent);
+}
+
+/* Stat cards row */
+#m1 .stats { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; margin-bottom: .85rem; }
+#m1 .stat-card {
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.07);
+  border-radius: 16px; padding: .85rem;
+  position: relative; overflow: hidden;
+}
+#m1 .stat-card.accent {
+  background: linear-gradient(145deg, rgba(201,48,112,.22), rgba(160,40,90,.1));
+  border-color: rgba(201,48,112,.25);
+}
+#m1 .stat-ico { font-size: 1.3rem; margin-bottom: .4rem; }
+#m1 .stat-val { font-size: 1.5rem; font-weight: 700; color: #fff; line-height: 1; }
+#m1 .stat-lbl { font-size: .65rem; color: rgba(255,255,255,.4); margin-top: .2rem; }
+
+/* Task items */
+#m1 .task-item {
+  display: flex; align-items: center; gap: .75rem;
+  padding: .7rem 0;
+  border-bottom: 1px solid rgba(255,255,255,.05);
+}
+#m1 .task-item:last-child { border-bottom: none; }
+#m1 .task-check {
+  width: 18px; height: 18px; border-radius: 6px;
+  border: 1.5px solid rgba(201,48,112,.5); flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+#m1 .task-check.done { background: linear-gradient(135deg,#C93070,#E0719A); border-color: transparent; }
+#m1 .task-check.done::after { content: '✓'; font-size: .65rem; color: #fff; }
+#m1 .task-text { font-size: .82rem; color: rgba(255,255,255,.8); flex: 1; }
+#m1 .task-text.done { color: rgba(255,255,255,.3); text-decoration: line-through; }
+#m1 .task-tag {
+  font-size: .6rem; padding: .15rem .45rem; border-radius: 999px;
+  background: rgba(201,48,112,.15); color: #F472B6; font-weight: 600;
+}
+
+/* Nav */
+#m1 .nav {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  display: flex; justify-content: space-around; align-items: center;
+  padding: .6rem .5rem calc(.6rem + env(safe-area-inset-bottom));
+  background: rgba(10,5,8,.95);
+  backdrop-filter: blur(30px);
+  border-top: 1px solid rgba(255,255,255,.06);
+}
+#m1 .ni { display: flex; flex-direction: column; align-items: center; gap: .2rem; padding: .3rem .6rem; border-radius: 12px; cursor: pointer; transition: all .2s; }
+#m1 .ni svg { width: 20px; height: 20px; stroke: rgba(255,255,255,.35); }
+#m1 .ni span { font-size: .48rem; color: rgba(255,255,255,.3); font-weight: 600; }
+#m1 .ni.active { background: rgba(201,48,112,.15); }
+#m1 .ni.active svg { stroke: #F472B6; filter: drop-shadow(0 0 6px rgba(244,114,182,.6)); }
+#m1 .ni.active span { color: #F472B6; }
+
+/* FAB */
+#m1 .fab {
+  position: absolute; bottom: 72px; right: 1.1rem;
+  width: 48px; height: 48px; border-radius: 50%;
+  background: linear-gradient(135deg, #C93070, #E0719A);
+  box-shadow: 0 8px 28px rgba(201,48,112,.55), 0 0 0 4px rgba(201,48,112,.15);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.3rem; cursor: pointer;
+}
+
+/* Mood row */
+#m1 .mood-row { display: flex; gap: .45rem; margin-bottom: .85rem; }
+#m1 .mood-chip {
+  flex: 1; display: flex; flex-direction: column; align-items: center;
+  gap: .25rem; padding: .55rem .3rem;
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.07);
+  border-radius: 14px; cursor: pointer; font-size: .7rem;
+}
+#m1 .mood-chip.active {
+  background: rgba(201,48,112,.18);
+  border-color: rgba(201,48,112,.35);
+}
+#m1 .mood-chip span { font-size: .55rem; color: rgba(255,255,255,.4); }
+#m1 .mood-chip.active span { color: #F472B6; }
+
+/* ═══════════════════════════════════════════
+   MAQUETTE 2 — "Aurora"
+   Inspiré Railway Vaporwave · violet + rose
+   fond clair crème avec accents violets
+═══════════════════════════════════════════ */
+#m2 { background: #F5F0FF; }
+
+#m2 .phone {
+  width: 340px; max-width: calc(100vw - 2rem);
+  margin: 2rem auto;
+  background: #fff;
+  border-radius: 36px;
+  border: 1px solid rgba(124,58,237,.12);
+  box-shadow:
+    0 0 0 8px rgba(124,58,237,.04),
+    0 40px 120px rgba(124,58,237,.2),
+    0 8px 40px rgba(236,72,153,.1);
+  overflow: hidden; min-height: 720px; position: relative;
+}
+
+/* Header */
+#m2 .hd {
+  padding: 1.25rem 1.25rem .85rem;
+  display: flex; align-items: center; justify-content: space-between;
+  background: linear-gradient(135deg, #7C3AED 0%, #9D4EDD 50%, #C026D3 100%);
+}
+#m2 .hd-title {
+  font-family: 'Playfair Display',serif; font-size: 1.3rem; font-weight: 700; color: #fff;
+  letter-spacing: -.01em;
+}
+#m2 .hd-avatar {
+  width: 34px; height: 34px; border-radius: 50%;
+  background: rgba(255,255,255,.25); border: 2px solid rgba(255,255,255,.5);
+  display: flex; align-items: center; justify-content: center; font-size: 1rem;
+}
+
+/* Content */
+#m2 .pg { padding: 1rem 1.1rem 5rem; background: #F8F5FF; min-height: calc(720px - 70px); }
+
+/* Hero */
+#m2 .hero {
+  background: linear-gradient(135deg, #7C3AED 0%, #EC4899 100%);
+  border-radius: 22px; padding: 1.2rem; margin-bottom: .9rem;
+  position: relative; overflow: hidden;
+}
+#m2 .hero::before {
+  content: ''; position: absolute; top: -20px; right: -20px;
+  width: 110px; height: 110px; border-radius: 50%;
+  background: rgba(255,255,255,.12);
+}
+#m2 .hero::after {
+  content: ''; position: absolute; bottom: -30px; left: 20px;
+  width: 80px; height: 80px; border-radius: 50%;
+  background: rgba(255,255,255,.08);
+}
+#m2 .hero-sub { font-size: .68rem; color: rgba(255,255,255,.7); font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
+#m2 .hero-name { font-family: 'Playfair Display',serif; font-size: 1.45rem; font-weight: 700; color: #fff; margin: .25rem 0; }
+#m2 .hero-date { font-size: .72rem; color: rgba(255,255,255,.65); }
+
+/* Quick stats */
+#m2 .qstats { display: grid; grid-template-columns: repeat(3,1fr); gap: .5rem; margin-bottom: .9rem; }
+#m2 .qs {
+  background: #fff; border-radius: 16px; padding: .75rem .6rem;
+  border: 1px solid rgba(124,58,237,.1);
+  box-shadow: 0 2px 12px rgba(124,58,237,.08);
+  text-align: center;
+}
+#m2 .qs-ico { font-size: 1.2rem; margin-bottom: .3rem; }
+#m2 .qs-val { font-size: 1.2rem; font-weight: 700; color: #7C3AED; }
+#m2 .qs-lbl { font-size: .58rem; color: #9CA3AF; font-weight: 500; margin-top: .1rem; }
+
+/* Section title */
+#m2 .st {
+  font-size: .65rem; font-weight: 700; letter-spacing: .1em;
+  text-transform: uppercase; color: #7C3AED;
+  margin: 1rem 0 .55rem;
+}
+
+/* Agenda items */
+#m2 .agenda-card {
+  background: #fff; border-radius: 18px; overflow: hidden;
+  border: 1px solid rgba(124,58,237,.1);
+  box-shadow: 0 2px 12px rgba(124,58,237,.06);
+  margin-bottom: .5rem;
+}
+#m2 .ag-item {
+  display: flex; align-items: center; gap: .7rem;
+  padding: .75rem 1rem;
+  border-bottom: 1px solid rgba(124,58,237,.06);
+}
+#m2 .ag-item:last-child { border-bottom: none; }
+#m2 .ag-dot {
+  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+}
+#m2 .ag-time { font-size: .68rem; color: #9CA3AF; width: 38px; flex-shrink: 0; }
+#m2 .ag-title { font-size: .82rem; color: #1F1235; font-weight: 500; flex: 1; }
+#m2 .ag-tag {
+  font-size: .58rem; padding: .15rem .45rem; border-radius: 999px;
+  font-weight: 600;
+}
+
+/* Task list */
+#m2 .task-item {
+  display: flex; align-items: center; gap: .7rem;
+  background: #fff; padding: .7rem 1rem;
+  border-radius: 14px; margin-bottom: .4rem;
+  border: 1px solid rgba(124,58,237,.08);
+  box-shadow: 0 1px 6px rgba(124,58,237,.05);
+}
+#m2 .task-check {
+  width: 20px; height: 20px; border-radius: 999px;
+  border: 2px solid #E9D5FF; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+#m2 .task-check.done {
+  background: linear-gradient(135deg, #7C3AED, #EC4899); border-color: transparent;
+}
+#m2 .task-check.done::after { content: '✓'; font-size: .65rem; color: #fff; }
+#m2 .task-text { font-size: .82rem; color: #1F1235; flex: 1; }
+#m2 .task-text.done { color: #D1D5DB; text-decoration: line-through; }
+
+/* Nav */
+#m2 .nav {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  display: flex; justify-content: space-around; align-items: center;
+  padding: .6rem .5rem .6rem;
+  background: #fff;
+  border-top: 1px solid rgba(124,58,237,.1);
+  box-shadow: 0 -4px 20px rgba(124,58,237,.08);
+}
+#m2 .ni { display: flex; flex-direction: column; align-items: center; gap: .2rem; padding: .3rem .6rem; border-radius: 12px; cursor: pointer; }
+#m2 .ni svg { width: 20px; height: 20px; stroke: #D1D5DB; }
+#m2 .ni span { font-size: .48rem; color: #D1D5DB; font-weight: 600; }
+#m2 .ni.active { background: #F3E8FF; }
+#m2 .ni.active svg { stroke: #7C3AED; }
+#m2 .ni.active span { color: #7C3AED; }
+
+/* FAB */
+#m2 .fab {
+  position: absolute; bottom: 72px; right: 1.1rem;
+  width: 52px; height: 52px; border-radius: 16px;
+  background: linear-gradient(135deg, #7C3AED, #EC4899);
+  box-shadow: 0 8px 28px rgba(124,58,237,.45);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.4rem; cursor: pointer;
+}
+
+/* Mood */
+#m2 .mood-row { display: flex; gap: .4rem; margin-bottom: .9rem; overflow-x: auto; scrollbar-width: none; }
+#m2 .mood-chip {
+  flex-shrink: 0; display: flex; flex-direction: column; align-items: center;
+  gap: .2rem; padding: .55rem .65rem;
+  background: #fff;
+  border: 1.5px solid rgba(124,58,237,.12);
+  border-radius: 16px; cursor: pointer; font-size: .85rem;
+}
+#m2 .mood-chip.active {
+  background: linear-gradient(135deg, #7C3AED, #EC4899);
+  border-color: transparent;
+}
+#m2 .mood-chip span { font-size: .55rem; color: #9CA3AF; }
+#m2 .mood-chip.active span { color: rgba(255,255,255,.8); }
+
+/* ═══════════════════════════════════════════
+   MAQUETTE 3 — "Pearl"
+   Inspiré Vercel · blanc pur · minimaliste
+   accents rose poudré discrets
+═══════════════════════════════════════════ */
+#m3 { background: #FAFAFA; }
+
+#m3 .phone {
+  width: 340px; max-width: calc(100vw - 2rem);
+  margin: 2rem auto;
+  background: #FFFFFF;
+  border-radius: 36px;
+  border: 1px solid #E5E7EB;
+  box-shadow: 0 0 0 8px rgba(0,0,0,.02), 0 40px 100px rgba(0,0,0,.12);
+  overflow: hidden; min-height: 720px; position: relative;
+}
+
+/* Header */
+#m3 .hd {
+  padding: 1.1rem 1.25rem .9rem;
+  display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid #F3F4F6;
+}
+#m3 .hd-title {
+  font-family: 'DM Sans',sans-serif; font-size: 1.05rem; font-weight: 700;
+  color: #111; letter-spacing: -.02em;
+}
+#m3 .hd-right { display: flex; align-items: center; gap: .5rem; }
+#m3 .hd-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: linear-gradient(135deg,#E0719A,#F9A8D4);
+}
+#m3 .hd-tag {
+  font-size: .65rem; color: #E0719A; font-weight: 700;
+  background: #FFF1F5; padding: .2rem .55rem; border-radius: 999px;
+  border: 1px solid #FBCFE8;
+}
+
+/* Greeting strip */
+#m3 .greet {
+  background: linear-gradient(135deg, #FFF1F5 0%, #FFF8FC 50%, #F5F3FF 100%);
+  padding: 1.1rem 1.25rem;
+  border-bottom: 1px solid #F3F4F6;
+}
+#m3 .greet-sub { font-size: .65rem; color: #9CA3AF; font-weight: 500; letter-spacing: .04em; }
+#m3 .greet-name {
+  font-family: 'Playfair Display',serif; font-size: 1.5rem; font-weight: 700;
+  background: linear-gradient(135deg, #BE185D 0%, #E0719A 60%, #7C3AED 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  line-height: 1.2; margin: .15rem 0;
+}
+#m3 .greet-quote { font-size: .72rem; color: #9CA3AF; font-style: italic; margin-top: .3rem; }
+
+/* Content */
+#m3 .pg { padding: .9rem 1.1rem 5rem; }
+
+/* Overview grid */
+#m3 .ov-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; margin-bottom: 1rem; }
+#m3 .ov-card {
+  border-radius: 18px; padding: .9rem;
+  border: 1px solid #F3F4F6;
+  background: #FAFAFA;
+  position: relative; overflow: hidden;
+}
+#m3 .ov-card.rose {
+  background: linear-gradient(145deg, #FFF1F5, #FFF5F8);
+  border-color: #FBCFE8;
+}
+#m3 .ov-card.lavender {
+  background: linear-gradient(145deg, #F5F3FF, #FAF8FF);
+  border-color: #E9D5FF;
+}
+#m3 .ov-card.mint {
+  background: linear-gradient(145deg, #F0FDF4, #F7FFF9);
+  border-color: #BBF7D0;
+}
+#m3 .ov-card.peach {
+  background: linear-gradient(145deg, #FFF7ED, #FFFBF5);
+  border-color: #FED7AA;
+}
+#m3 .ov-ico { font-size: 1.25rem; margin-bottom: .4rem; }
+#m3 .ov-val { font-size: 1.4rem; font-weight: 700; color: #111; }
+#m3 .ov-lbl { font-size: .62rem; color: #9CA3AF; font-weight: 500; margin-top: .1rem; }
+#m3 .ov-badge {
+  position: absolute; top: .7rem; right: .7rem;
+  width: 7px; height: 7px; border-radius: 50%;
+}
+
+/* Section title */
+#m3 .st {
+  font-size: .62rem; font-weight: 700; letter-spacing: .1em;
+  text-transform: uppercase; color: #D1D5DB;
+  margin: 1rem 0 .55rem;
+}
+
+/* Timeline */
+#m3 .timeline { position: relative; padding-left: 1.2rem; }
+#m3 .timeline::before {
+  content: ''; position: absolute; left: 3px; top: 4px; bottom: 4px;
+  width: 1px; background: linear-gradient(to bottom, #FBCFE8, #E9D5FF, transparent);
+}
+#m3 .tl-item { position: relative; margin-bottom: .75rem; }
+#m3 .tl-item::before {
+  content: ''; position: absolute; left: -1.05rem; top: .4rem;
+  width: 7px; height: 7px; border-radius: 50%; border: 1.5px solid #fff;
+}
+#m3 .tl-item:nth-child(1)::before { background: #E0719A; box-shadow: 0 0 0 2px rgba(224,113,154,.25); }
+#m3 .tl-item:nth-child(2)::before { background: #7C3AED; box-shadow: 0 0 0 2px rgba(124,58,237,.2); }
+#m3 .tl-item:nth-child(3)::before { background: #10B981; box-shadow: 0 0 0 2px rgba(16,185,129,.2); }
+#m3 .tl-time { font-size: .6rem; color: #D1D5DB; font-weight: 500; }
+#m3 .tl-title { font-size: .82rem; color: #111; font-weight: 500; margin-top: .05rem; }
+#m3 .tl-sub { font-size: .68rem; color: #9CA3AF; }
+
+/* Todo */
+#m3 .todo-item {
+  display: flex; align-items: center; gap: .7rem; padding: .6rem 0;
+  border-bottom: 1px solid #F9FAFB;
+}
+#m3 .todo-item:last-child { border-bottom: none; }
+#m3 .check {
+  width: 18px; height: 18px; border-radius: 5px;
+  border: 1.5px solid #E5E7EB; flex-shrink: 0;
+}
+#m3 .check.done {
+  background: linear-gradient(135deg,#E0719A,#F472B6); border-color: transparent;
+  display: flex; align-items: center; justify-content: center;
+}
+#m3 .check.done::after { content: '✓'; font-size: .6rem; color: #fff; }
+#m3 .todo-text { font-size: .8rem; color: #374151; flex: 1; }
+#m3 .todo-text.done { color: #D1D5DB; text-decoration: line-through; }
+#m3 .todo-chip {
+  font-size: .58rem; padding: .12rem .4rem; border-radius: 999px; font-weight: 600;
+}
+
+/* Nav */
+#m3 .nav {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  display: flex; justify-content: space-around; align-items: center;
+  padding: .7rem .5rem .7rem;
+  background: rgba(255,255,255,.96);
+  backdrop-filter: blur(20px);
+  border-top: 1px solid #F3F4F6;
+}
+#m3 .ni { display: flex; flex-direction: column; align-items: center; gap: .25rem; padding: .3rem .6rem; border-radius: 10px; cursor: pointer; }
+#m3 .ni svg { width: 19px; height: 19px; stroke: #D1D5DB; stroke-width: 1.8; }
+#m3 .ni span { font-size: .48rem; color: #D1D5DB; font-weight: 600; }
+#m3 .ni.active svg { stroke: #E0719A; }
+#m3 .ni.active span { color: #E0719A; }
+
+/* FAB */
+#m3 .fab {
+  position: absolute; bottom: 75px; right: 1.1rem;
+  width: 50px; height: 50px; border-radius: 50%;
+  background: #111;
+  box-shadow: 0 8px 28px rgba(0,0,0,.25);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.3rem; cursor: pointer;
+}
+
+/* Affirmation */
+#m3 .affirm {
+  background: linear-gradient(135deg, #FFF1F5, #F5F3FF);
+  border: 1px solid #FBCFE8; border-radius: 18px;
+  padding: .85rem 1rem; margin-bottom: .9rem;
+  text-align: center;
+}
+#m3 .affirm-text {
+  font-family: 'Playfair Display', serif; font-style: italic;
+  font-size: .88rem; color: #BE185D; line-height: 1.5;
+}
+#m3 .affirm-author { font-size: .6rem; color: #D1D5DB; margin-top: .4rem; }
+</style>
+</head>
+<body>
+
+<!-- Switcher -->
+<div class="switcher">
+  <span class="sw-label">Maquettes</span>
+  <button class="sw-btn active" data-m="1" onclick="show(1)">🌹 Velvet Rose</button>
+  <button class="sw-btn" data-m="2" onclick="show(2)">🔮 Aurora</button>
+  <button class="sw-btn" data-m="3" onclick="show(3)">🤍 Pearl</button>
+</div>
+
+<!-- ═══ MAQUETTE 1 — Velvet Rose ═══ -->
+<div id="m1" class="mockup active">
+<div class="phone">
+  <!-- Header -->
+  <div class="hd">
+    <div class="hd-title">Planify</div>
+    <div class="hd-pill">Jeudi 2 avril</div>
+  </div>
+
+  <!-- Page -->
+  <div class="pg">
+    <!-- Hero -->
+    <div class="hero">
+      <div class="hero-sub">Bonsoir</div>
+      <div class="hero-name">Sarah ✨</div>
+      <div class="hero-mood">Tu te sens <span>Bien 🌸</span> aujourd'hui</div>
+    </div>
+
+    <!-- Mood -->
+    <div class="st">Humeur du jour</div>
+    <div class="mood-row">
+      <div class="mood-chip"><span style="font-size:1.1rem">✨</span><span>Excellent</span></div>
+      <div class="mood-chip active"><span style="font-size:1.1rem">🌸</span><span>Bien</span></div>
+      <div class="mood-chip"><span style="font-size:1.1rem">☁️</span><span>Neutre</span></div>
+      <div class="mood-chip"><span style="font-size:1.1rem">🌧️</span><span>Difficile</span></div>
+      <div class="mood-chip"><span style="font-size:1.1rem">😢</span><span>Triste</span></div>
+    </div>
+
+    <!-- Stats -->
+    <div class="st">Vue d'ensemble</div>
+    <div class="stats">
+      <div class="stat-card accent">
+        <div class="stat-ico">📋</div>
+        <div class="stat-val">3</div>
+        <div class="stat-lbl">Tâches du jour</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-ico">📅</div>
+        <div class="stat-val">2</div>
+        <div class="stat-lbl">Événements</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-ico">📝</div>
+        <div class="stat-val">8</div>
+        <div class="stat-lbl">Notes</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-ico">🎓</div>
+        <div class="stat-val">14.2</div>
+        <div class="stat-lbl">Moyenne S2</div>
+      </div>
+    </div>
+
+    <!-- Tasks -->
+    <div class="st">À faire</div>
+    <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:18px;padding:.4rem .85rem">
+      <div class="task-item">
+        <div class="task-check done"></div>
+        <div class="task-text done">Réviser chimie organique</div>
+        <div class="task-tag">Cours</div>
+      </div>
+      <div class="task-item">
+        <div class="task-check"></div>
+        <div class="task-text">Rendre compte-rendu TP</div>
+        <div class="task-tag">Urgent</div>
+      </div>
+      <div class="task-item">
+        <div class="task-check"></div>
+        <div class="task-text">Appeler maman 📞</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FAB -->
+  <div class="fab">+</div>
+
+  <!-- Nav -->
+  <div class="nav">
+    <div class="ni active">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      <span>Accueil</span>
+    </div>
+    <div class="ni">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      <span>Notes</span>
+    </div>
+    <div class="ni">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      <span>Agenda</span>
+    </div>
+    <div class="ni">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+      <span>Bien-être</span>
+    </div>
+    <div class="ni">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+      <span>Tâches</span>
+    </div>
+    <div class="ni">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/></svg>
+      <span>Moyennes</span>
+    </div>
+  </div>
+</div>
+
+<!-- Description -->
+<div style="max-width:340px;margin:0 auto 2rem;padding:0 1rem;color:rgba(255,255,255,.5);font-size:.8rem;text-align:center;line-height:1.7">
+  <strong style="color:#F472B6">🌹 Velvet Rose</strong> — Dark profond inspiré <strong style="color:rgba(255,255,255,.7)">Linear</strong>.<br>
+  Fond near-black avec mesh rose animé. Cards translucides avec glow neon. Typo gradient. Nav glassmorphisme.
+</div>
+</div>
+
+<!-- ═══ MAQUETTE 2 — Aurora ═══ -->
+<div id="m2" class="mockup">
+<div class="phone">
+  <!-- Header -->
+  <div class="hd">
+    <div class="hd-title">Planify 🌸</div>
+    <div class="hd-avatar">👩‍🎓</div>
+  </div>
+
+  <!-- Page -->
+  <div class="pg">
+    <!-- Hero -->
+    <div class="hero">
+      <div class="hero-sub">Bonjour</div>
+      <div class="hero-name">Sarah ✨</div>
+      <div class="hero-date">Jeudi 2 avril 2026</div>
+    </div>
+
+    <!-- Quick stats -->
+    <div class="qstats" style="margin-top:.9rem">
+      <div class="qs">
+        <div class="qs-ico">📋</div>
+        <div class="qs-val">3</div>
+        <div class="qs-lbl">Tâches</div>
+      </div>
+      <div class="qs">
+        <div class="qs-ico">📅</div>
+        <div class="qs-val">2</div>
+        <div class="qs-lbl">Évènements</div>
+      </div>
+      <div class="qs">
+        <div class="qs-ico">🎓</div>
+        <div class="qs-val">14.2</div>
+        <div class="qs-lbl">Moyenne</div>
+      </div>
+    </div>
+
+    <!-- Mood -->
+    <div class="st">Comment tu te sens ?</div>
+    <div class="mood-row">
+      <div class="mood-chip"><span>✨</span><span>Super</span></div>
+      <div class="mood-chip active"><span>🌸</span><span>Bien</span></div>
+      <div class="mood-chip"><span>☁️</span><span>Ok</span></div>
+      <div class="mood-chip"><span>🌧️</span><span>Dur</span></div>
+      <div class="mood-chip"><span>😢</span><span>Triste</span></div>
+    </div>
+
+    <!-- Agenda today -->
+    <div class="st">Aujourd'hui</div>
+    <div class="agenda-card">
+      <div class="ag-item">
+        <div class="ag-dot" style="background:#7C3AED"></div>
+        <div class="ag-time">09h00</div>
+        <div class="ag-title">Cours de Chimie</div>
+        <div class="ag-tag" style="background:#F3E8FF;color:#7C3AED">Fac</div>
+      </div>
+      <div class="ag-item">
+        <div class="ag-dot" style="background:#EC4899"></div>
+        <div class="ag-time">18h00</div>
+        <div class="ag-title">Tennis de table 🏓</div>
+        <div class="ag-tag" style="background:#FDF2F8;color:#EC4899">Sport</div>
+      </div>
+    </div>
+
+    <!-- Tasks -->
+    <div class="st">À faire</div>
+    <div class="task-item">
+      <div class="task-check done"></div>
+      <div class="task-text done">Réviser chimie organique</div>
+    </div>
+    <div class="task-item">
+      <div class="task-check"></div>
+      <div class="task-text">Rendre compte-rendu TP</div>
+    </div>
+    <div class="task-item">
+      <div class="task-check"></div>
+      <div class="task-text">Appeler maman 📞</div>
+    </div>
+  </div>
+
+  <!-- FAB -->
+  <div class="fab">+</div>
+
+  <!-- Nav -->
+  <div class="nav">
+    <div class="ni active">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      <span>Accueil</span>
+    </div>
+    <div class="ni">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/></svg>
+      <span>Notes</span>
+    </div>
+    <div class="ni">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      <span>Agenda</span>
+    </div>
+    <div class="ni">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+      <span>Bien-être</span>
+    </div>
+    <div class="ni">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+      <span>Tâches</span>
+    </div>
+    <div class="ni">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/></svg>
+      <span>Moyennes</span>
+    </div>
+  </div>
+</div>
+
+<div style="max-width:340px;margin:0 auto 2rem;padding:0 1rem;color:#6B7280;font-size:.8rem;text-align:center;line-height:1.7">
+  <strong style="color:#7C3AED">🔮 Aurora</strong> — Fond lavande inspiré <strong style="color:#374151">Railway Vaporwave</strong>.<br>
+  Header gradient violet-rose. Cards blanches légères. Stats lisibles. Féminin mais structuré.
+</div>
+</div>
+
+<!-- ═══ MAQUETTE 3 — Pearl ═══ -->
+<div id="m3" class="mockup">
+<div class="phone">
+  <!-- Header -->
+  <div class="hd">
+    <div class="hd-title">Planify</div>
+    <div class="hd-right">
+      <div class="hd-dot"></div>
+      <div class="hd-tag">Jeudi</div>
+    </div>
+  </div>
+
+  <!-- Greeting -->
+  <div class="greet">
+    <div class="greet-sub">Bonsoir ·  2 avril 2026</div>
+    <div class="greet-name">Sarah ✨</div>
+    <div class="greet-quote">"La beauté commence au moment où tu décides d'être toi-même."</div>
+  </div>
+
+  <!-- Page -->
+  <div class="pg">
+    <!-- Affirmation -->
+    <div class="affirm">
+      <div class="affirm-text">Tu as déjà accompli 1 tâche<br>aujourd'hui — continue ! 🌸</div>
+      <div class="affirm-author">— Planify pour toi</div>
+    </div>
+
+    <!-- Overview grid -->
+    <div class="st">Vue d'ensemble</div>
+    <div class="ov-grid">
+      <div class="ov-card rose">
+        <div class="ov-badge" style="background:#FBCFE8"></div>
+        <div class="ov-ico">📋</div>
+        <div class="ov-val">3</div>
+        <div class="ov-lbl">Tâches en cours</div>
+      </div>
+      <div class="ov-card lavender">
+        <div class="ov-badge" style="background:#E9D5FF"></div>
+        <div class="ov-ico">📅</div>
+        <div class="ov-val">2</div>
+        <div class="ov-lbl">Évènements</div>
+      </div>
+      <div class="ov-card mint">
+        <div class="ov-badge" style="background:#BBF7D0"></div>
+        <div class="ov-ico">🎓</div>
+        <div class="ov-val">14.2</div>
+        <div class="ov-lbl">Moyenne S2</div>
+      </div>
+      <div class="ov-card peach">
+        <div class="ov-badge" style="background:#FED7AA"></div>
+        <div class="ov-ico">📝</div>
+        <div class="ov-val">8</div>
+        <div class="ov-lbl">Notes</div>
+      </div>
+    </div>
+
+    <!-- Timeline -->
+    <div class="st">Planning du jour</div>
+    <div class="timeline">
+      <div class="tl-item">
+        <div class="tl-time">09h00</div>
+        <div class="tl-title">Cours de Chimie</div>
+        <div class="tl-sub">Amphi B · 2h</div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-time">14h30</div>
+        <div class="tl-title">TP Biologie</div>
+        <div class="tl-sub">Salle TP 3 · 3h</div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-time">18h00</div>
+        <div class="tl-title">Tennis de table 🏓</div>
+        <div class="tl-sub">Gymnase central</div>
+      </div>
+    </div>
+
+    <!-- Todos -->
+    <div class="st" style="margin-top:1rem">À faire</div>
+    <div style="background:#fff;border:1px solid #F3F4F6;border-radius:18px;padding:.3rem .9rem">
+      <div class="todo-item">
+        <div class="check done"></div>
+        <div class="todo-text done">Réviser chimie organique</div>
+        <div class="todo-chip" style="background:#FFF1F5;color:#E0719A">Cours</div>
+      </div>
+      <div class="todo-item">
+        <div class="check"></div>
+        <div class="todo-text">Rendre compte-rendu TP</div>
+        <div class="todo-chip" style="background:#FEF3C7;color:#D97706">⚡</div>
+      </div>
+      <div class="todo-item">
+        <div class="check"></div>
+        <div class="todo-text">Appeler maman 📞</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FAB -->
+  <div class="fab">✦</div>
+
+  <!-- Nav -->
+  <div class="nav">
+    <div class="ni active">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      <span>Accueil</span>
+    </div>
+    <div class="ni">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/></svg>
+      <span>Notes</span>
+    </div>
+    <div class="ni">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      <span>Agenda</span>
+    </div>
+    <div class="ni">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+      <span>Bien-être</span>
+    </div>
+    <div class="ni">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+      <span>Tâches</span>
+    </div>
+    <div class="ni">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/></svg>
+      <span>Moyennes</span>
+    </div>
+  </div>
+</div>
+
+<div style="max-width:340px;margin:0 auto 2rem;padding:0 1rem;color:#6B7280;font-size:.8rem;text-align:center;line-height:1.7">
+  <strong style="color:#BE185D">🤍 Pearl</strong> — Fond blanc pur inspiré <strong style="color:#374151">Vercel</strong>.<br>
+  Minimaliste & aéré. Cards pastel colorées. Timeline élégante. FAB noir ✦ pour l'originalité.
+</div>
+</div>
+
+<script>
+function show(n) {
+  document.querySelectorAll('.mockup').forEach(m => m.classList.remove('active'));
+  document.querySelectorAll('.sw-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('m'+n).classList.add('active');
+  document.querySelector('[data-m="'+n+'"]').classList.add('active');
+}
+</script>
+</body>
+</html>

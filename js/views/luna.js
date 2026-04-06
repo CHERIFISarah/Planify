@@ -9,6 +9,7 @@ let _lunaInit      = false;
 let _lunaCtx       = null;   // dernier intent (mémoire courante)
 let _lunaData_     = null;   // cache données (rafraîchi à chaque message)
 let _lunaListening = false;  // microphone actif
+let _lunaSR        = null;   // SpeechRecognition instance
 
 // ── Chips suggestions ─────────────────────────────────
 const _LUNA_CHIPS = [
@@ -847,10 +848,29 @@ function sendLunaQuick(text){
   _lunaAsk(clean||text);
 }
 
-function clearLunaChat(){ _lunaMsgs=[]; _lunaInit=false; _lunaCtx=null; go('luna'); }
+function clearLunaChat(){ _lunaMsgs=[]; _lunaInit=false; _lunaCtx=null; LS.s('pl_luna_history', []); go('luna'); }
+
+function _lunaChime() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(1047, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(784, ctx.currentTime + 0.12);
+    gain.gain.setValueAtTime(0.08, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.35);
+    setTimeout(() => ctx.close(), 500);
+  } catch(e) {}
+}
 
 async function _lunaAsk(msg){
   _lunaMsgs.push({role:'user',text:msg,ts:_lunaTs()});
+  _lunaSaveMsgs();
   _lunaTyping=true;
   _refreshMsgs();
 
@@ -866,6 +886,8 @@ async function _lunaAsk(msg){
     if(actR){
       _lunaTyping=false;
       _lunaMsgs.push({role:'luna',text:actR,ts:_lunaTs()});
+      _lunaSaveMsgs();
+      if(D.cfg.lunaSound!==false) _lunaChime();
       _refreshMsgs();
       return;
     }
@@ -873,6 +895,8 @@ async function _lunaAsk(msg){
       const reply=await _callClaudeAPI(msg,D,p,apiKey);
       _lunaTyping=false;
       _lunaMsgs.push({role:'luna',text:reply,ts:_lunaTs()});
+      _lunaSaveMsgs();
+      if(D.cfg.lunaSound!==false) _lunaChime();
       _refreshMsgs();
     }catch(e){
       _lunaTyping=false;
@@ -880,6 +904,8 @@ async function _lunaAsk(msg){
         `Clé API invalide **${p}** 🔑\nVérifie-la dans **Réglages** !`:
         _lunaThink(msg);
       _lunaMsgs.push({role:'luna',text:fb,ts:_lunaTs()});
+      _lunaSaveMsgs();
+      if(D.cfg.lunaSound!==false) _lunaChime();
       _refreshMsgs();
     }
     return;
@@ -890,8 +916,60 @@ async function _lunaAsk(msg){
   setTimeout(()=>{
     _lunaTyping=false;
     _lunaMsgs.push({role:'luna',text:_lunaThink(msg),ts:_lunaTs()});
+    _lunaSaveMsgs();
+    if(_getData().cfg.lunaSound!==false) _lunaChime();
     _refreshMsgs();
   },delay);
+}
+
+// ════════════════════════════════════════════════════════
+//  MÉMOIRE PERSISTANTE
+// ════════════════════════════════════════════════════════
+function _lunaSaveMsgs() {
+  try { LS.s('pl_luna_history', _lunaMsgs.slice(-60)); } catch(e) {}
+}
+function _lunaLoadMsgs() {
+  try {
+    const saved = LS.g('pl_luna_history');
+    if (Array.isArray(saved) && saved.length) _lunaMsgs = saved;
+  } catch(e) {}
+}
+
+// ════════════════════════════════════════════════════════
+//  MICROPHONE
+// ════════════════════════════════════════════════════════
+function toggleLunaMic() {
+  const btn = document.getElementById('luna-mic-btn');
+  if (_lunaListening) {
+    if (_lunaSR) { try { _lunaSR.stop(); } catch(e) {} }
+    _lunaListening = false;
+    if (btn) btn.classList.remove('luna-mic-on');
+    return;
+  }
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { showToast('Micro non supporté sur ce navigateur 😕'); return; }
+  _lunaSR = new SR();
+  _lunaSR.lang = 'fr-FR';
+  _lunaSR.continuous = false;
+  _lunaSR.interimResults = true;
+  _lunaSR.onresult = ev => {
+    const t = Array.from(ev.results).map(r => r[0].transcript).join('');
+    const inp = document.getElementById('luna-input');
+    if (inp) { inp.value = t; inp.style.height = ''; inp.style.height = Math.min(inp.scrollHeight, 120) + 'px'; }
+  };
+  _lunaSR.onend = () => {
+    _lunaListening = false;
+    if (btn) btn.classList.remove('luna-mic-on');
+    const inp = document.getElementById('luna-input');
+    if (inp && inp.value.trim()) sendLunaMsg();
+  };
+  _lunaSR.onerror = () => {
+    _lunaListening = false;
+    if (btn) btn.classList.remove('luna-mic-on');
+  };
+  _lunaSR.start();
+  _lunaListening = true;
+  if (btn) btn.classList.add('luna-mic-on');
 }
 
 // ════════════════════════════════════════════════════════
@@ -899,27 +977,31 @@ async function _lunaAsk(msg){
 // ════════════════════════════════════════════════════════
 function viewLuna(){
   if(!_lunaInit){
+    _lunaLoadMsgs();
     _lunaInit=true;
-    setTimeout(()=>{
-      const D=_getData();
-      const raw=D.cfg.prenom||D.cfg.name||'';
-      const p=raw?raw.split(' ')[0]:'';
-      const pn=p?` **${p}**`:'';
-      const h=new Date().getHours();
-      const s=h<5?'Bonne nuit':h<12?'Bonjour':h<18?'Bon après-midi':'Bonsoir';
-      const td=_date(0);
-      const evs=D.events.filter(e=>e.date===td);
-      const pend=D.tasks.filter(t=>!t.done).length;
-      let ctx='';
-      if(evs.length) ctx+=` Tu as **${evs.length} événement${evs.length>1?'s':''}** aujourd'hui.`;
-      if(pend)       ctx+=` **${pend} tâche${pend>1?'s':''}** en attente.`;
-      _lunaMsgs.push({
-        role:'luna',
-        text:`${s}${pn} ! Je suis **Luna** 🌸, ton assistante personnelle.${ctx}\n\nJe comprends le français naturel, le langage texto (_cv, slt, auj_…) et j'accède à toutes tes données — **100% hors ligne et privé** 🔒\n\nComment puis-je t'aider ?`,
-        ts:_lunaTs()
-      });
-      _refreshMsgs();
-    },300);
+    if(_lunaMsgs.length === 0){
+      setTimeout(()=>{
+        const D=_getData();
+        const raw=D.cfg.prenom||D.cfg.name||'';
+        const p=raw?raw.split(' ')[0]:'';
+        const pn=p?` **${p}**`:'';
+        const h=new Date().getHours();
+        const s=h<5?'Bonne nuit':h<12?'Bonjour':h<18?'Bon après-midi':'Bonsoir';
+        const td=_date(0);
+        const evs=D.events.filter(e=>e.date===td);
+        const pend=D.tasks.filter(t=>!t.done).length;
+        let ctx='';
+        if(evs.length) ctx+=` Tu as **${evs.length} événement${evs.length>1?'s':''}** aujourd'hui.`;
+        if(pend)       ctx+=` **${pend} tâche${pend>1?'s':''}** en attente.`;
+        _lunaMsgs.push({
+          role:'luna',
+          text:`${s}${pn} ! Je suis **Luna** 🌸, ton assistante personnelle.${ctx}\n\nJe comprends le français naturel, le langage texto (_cv, slt, auj_…) et j'accède à toutes tes données — **100% hors ligne et privé** 🔒\n\nComment puis-je t'aider ?`,
+          ts:_lunaTs()
+        });
+        _lunaSaveMsgs();
+        _refreshMsgs();
+      },300);
+    }
   }
 
   return `
@@ -974,6 +1056,9 @@ function viewLuna(){
     onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendLunaMsg()}"
     oninput="this.style.height='';this.style.height=Math.min(this.scrollHeight,120)+'px'"
     autocomplete="off"></textarea>
+  <button class="luna-mic" id="luna-mic-btn" onclick="toggleLunaMic()" title="Parler à Luna 🎤">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10a7 7 0 0014 0M12 19v3M9 22h6"/></svg>
+  </button>
   <button class="luna-send" onclick="sendLunaMsg()" title="Envoyer (Entrée)">
     <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
   </button>

@@ -350,6 +350,14 @@ function fmtSize(size) {
   triggerEditorInput();
 }
 
+function fmtHighlight(color) {
+  const el = document.getElementById('e-content');
+  el.focus();
+  document.execCommand('styleWithCSS', false, true);
+  document.execCommand('hiliteColor', false, color);
+  triggerEditorInput();
+}
+
 function fmtBlock(tag) {
   const el = document.getElementById('e-content');
   el.focus();
@@ -536,4 +544,35 @@ function delSubject(id) {
   LS.s('pl_subjects', LS.subjects().filter(s => s.id !== id));
   LS.s('pl_notes',    LS.notes().filter(n => n.subjectId !== id));
   go('notes');
+}
+
+function exportNotePDF() {
+  const note = LS.notes().find(n => n.id === _nid);
+  if (!note) return;
+  const sub = LS.subjects().find(s => s.id === note.subjectId);
+  const win = window.open('', '_blank');
+  if (!win) { showToast('Autorise les popups pour exporter en PDF'); return; }
+  win.document.write(`<!DOCTYPE html><html lang="fr"><head>
+<meta charset="utf-8">
+<title>${note.title || 'Note'}</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=Inter:wght@400;500&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:Inter,sans-serif;font-size:14px;line-height:1.7;color:#1C0F1A;padding:2.5cm 2cm;max-width:900px;margin:0 auto}
+  h1{font-family:'Playfair Display',serif;font-size:2rem;color:#C4778E;border-bottom:2px solid #C4778E;padding-bottom:.5rem;margin-bottom:1.5rem}
+  .meta{font-size:.8rem;color:#888;margin-bottom:1.5rem}
+  h2{color:#7A2E50;margin:1.2rem 0 .4rem;font-size:1.2rem}
+  table{border-collapse:collapse;width:100%;margin:1rem 0}
+  td,th{border:1.5px solid #ddd;padding:7px 12px}
+  th{background:#FAF0F3;font-weight:600}
+  img{max-width:100%;border-radius:6px}
+  @media print{button{display:none}}
+</style>
+</head><body>
+<h1>${note.title || 'Sans titre'}</h1>
+<div class="meta">${sub ? sub.emoji + ' ' + sub.name + ' · ' : ''}${new Date(note.updatedAt).toLocaleDateString('fr-FR', {day:'numeric',month:'long',year:'numeric'})}</div>
+${note.content || '<p><em>Note vide</em></p>'}
+<script>window.onload=function(){window.print();}<\/script>
+</body></html>`);
+  win.document.close();
 }
