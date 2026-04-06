@@ -811,13 +811,16 @@ Réponds toujours à la question posée directement, sans intro inutile.`;
       'anthropic-dangerous-direct-browser-access':'true',
     },
     body:JSON.stringify({
-      model:'claude-haiku-4-5-20251001',
+      model:'claude-3-5-haiku-20241022',
       max_tokens:600,
       system:sysPrompt,
       messages:history,
     })
   });
-  if(!res.ok) throw new Error('API error '+res.status);
+  if(!res.ok){
+    const err=await res.json().catch(()=>({}));
+    throw new Error('API error '+res.status+' — '+(err?.error?.message||''));
+  }
   const data=await res.json();
   return data.content[0].text;
 }
@@ -853,18 +856,22 @@ function clearLunaChat(){ _lunaMsgs=[]; _lunaInit=false; _lunaCtx=null; LS.s('pl
 function _lunaChime() {
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(1047, ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(784, ctx.currentTime + 0.12);
-    gain.gain.setValueAtTime(0.08, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
-    osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + 0.35);
-    setTimeout(() => ctx.close(), 500);
+    const play = (freq, start, dur, vol=0.06) => {
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.type = 'sine';
+      o.frequency.setValueAtTime(freq, ctx.currentTime + start);
+      g.gain.setValueAtTime(0, ctx.currentTime + start);
+      g.gain.linearRampToValueAtTime(vol, ctx.currentTime + start + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + dur);
+      o.start(ctx.currentTime + start);
+      o.stop(ctx.currentTime + start + dur);
+    };
+    play(523, 0,    0.18);
+    play(659, 0.12, 0.18);
+    play(784, 0.22, 0.28, 0.05);
+    setTimeout(() => ctx.close(), 800);
   } catch(e) {}
 }
 
@@ -900,9 +907,13 @@ async function _lunaAsk(msg){
       _refreshMsgs();
     }catch(e){
       _lunaTyping=false;
-      const fb=e.message.includes('401')?
-        `Clé API invalide **${p}** 🔑\nVérifie-la dans **Réglages** !`:
-        _lunaThink(msg);
+      console.error('[Luna API]',e.message);
+      let fb;
+      if(e.message.includes('401')) fb=`Clé API invalide **${p}** 🔑\nVérifie-la dans **Réglages** !`;
+      else if(e.message.includes('403')) fb=`Accès refusé **${p}** 🔑 — ta clé n'a pas les droits nécessaires.`;
+      else if(e.message.includes('429')) fb=`Trop de messages **${p}** ⏳ — attends quelques secondes et réessaie !`;
+      else if(e.message.includes('CORS')||e.message.includes('fetch')) fb=`Problème de connexion **${p}** 🌐 — vérifie ta connexion internet.`;
+      else fb=_lunaThink(msg);
       _lunaMsgs.push({role:'luna',text:fb,ts:_lunaTs()});
       _lunaSaveMsgs();
       if(D.cfg.lunaSound!==false) _lunaChime();
