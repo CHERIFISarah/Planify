@@ -765,7 +765,6 @@ async function _callClaudeAPI(msg, D, p, apiKey){
   const now=new Date();
   const td=_date(0);
 
-  // Contexte utilisateur enrichi pour le system prompt
   const evs=D.events.filter(e=>e.date===td).sort((a,b)=>(a.startTime||'').localeCompare(b.startTime||''));
   const pend=D.tasks.filter(t=>!t.done).slice(0,5);
   const mo=_mood(D.moods,td);
@@ -790,39 +789,34 @@ Tu connais TOUTES les données de ${p} — utilise-les pour des réponses person
 💧 Eau : ${D.water}/8 verres
 🛒 Courses à faire : ${shopRem.length?shopRem.map(i=>i.name).join(', '):'Rien'}
 
-Si ${p} te demande d'ajouter quelque chose (note, course, tâche, rappel), dis-lui simplement que c'est fait avec enthousiasme — l'action a déjà été exécutée automatiquement avant de t'appeler.
-Ne propose jamais d'aller dans les paramètres pour configurer quoi que ce soit.
-Réponds toujours à la question posée directement, sans intro inutile.`;
+Si ${p} te demande d'ajouter quelque chose (note, course, tâche, rappel), dis-lui que c'est fait — l'action a déjà été exécutée.
+Réponds toujours directement, sans intro inutile.`;
 
-  // Historique de conversation (10 derniers messages)
-  const history=_lunaMsgs.slice(-10).map(m=>({
-    role: m.role==='user'?'user':'assistant',
-    content: m.text
+  // Historique (format Gemini : role 'user' ou 'model')
+  const contents = _lunaMsgs.slice(-10).map(m=>({
+    role: m.role==='user'?'user':'model',
+    parts:[{text:m.text}]
   }));
-  // Ajouter le message actuel
-  history.push({role:'user',content:msg});
+  contents.push({role:'user',parts:[{text:msg}]});
 
-  const res=await fetch('https://api.anthropic.com/v1/messages',{
-    method:'POST',
-    headers:{
-      'Content-Type':'application/json',
-      'x-api-key':apiKey,
-      'anthropic-version':'2023-06-01',
-      'anthropic-dangerous-direct-browser-access':'true',
-    },
-    body:JSON.stringify({
-      model:'claude-3-5-haiku-20241022',
-      max_tokens:600,
-      system:sysPrompt,
-      messages:history,
-    })
-  });
+  const res=await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+    {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        system_instruction:{parts:[{text:sysPrompt}]},
+        contents,
+        generationConfig:{maxOutputTokens:600,temperature:0.8}
+      })
+    }
+  );
   if(!res.ok){
     const err=await res.json().catch(()=>({}));
     throw new Error('API error '+res.status+' — '+(err?.error?.message||''));
   }
   const data=await res.json();
-  return data.content[0].text;
+  return data.candidates[0].content.parts[0].text;
 }
 
 // ════════════════════════════════════════════════════════
@@ -884,9 +878,9 @@ async function _lunaAsk(msg){
   const D=_getData();
   const raw=D.cfg.prenom||D.cfg.name||'';
   const p=raw?raw.split(' ')[0]:'toi';
-  const apiKey=(D.cfg.claudeApiKey||'').trim();
+  const apiKey=(D.cfg.geminiApiKey||D.cfg.claudeApiKey||'').trim();
 
-  // Si clé API configurée → Luna intelligente via Claude
+  // Si clé API configurée → Luna intelligente via Gemini
   if(apiKey){
     // Actions directes d'abord (offline, pas besoin d'API)
     const actR=_lunaAction(msg,p);

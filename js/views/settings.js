@@ -219,23 +219,23 @@ function viewSettings() {
 <div class="st">Luna IA 🌸</div>
 <div class="card">
   <div style="font-size:.8rem;color:var(--ts);line-height:1.6;margin-bottom:.75rem;background:var(--pl);padding:.65rem;border-radius:var(--rs)">
-    ✨ <strong>Mode intelligent (optionnel)</strong> : entre ta clé API Claude pour que Luna réponde avec l'intelligence de l'IA Claude. Sans clé, Luna fonctionne 100% hors ligne.
+    ✨ <strong>Mode intelligent (optionnel)</strong> : entre ta clé API Gemini pour que Luna réponde avec l'intelligence de Google Gemini. Sans clé, Luna fonctionne 100% hors ligne. La clé est <strong>gratuite</strong> sur <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:var(--p)">aistudio.google.com</a>.
   </div>
   <div class="setting-row">
     <div>
-      <div class="setting-label">🔑 Clé API Claude</div>
-      <div class="setting-hint">Depuis <strong>console.anthropic.com</strong></div>
+      <div class="setting-label">🔑 Clé API Gemini</div>
+      <div class="setting-hint">Depuis <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:var(--p)"><strong>aistudio.google.com</strong></a> → Get API key</div>
     </div>
   </div>
   <div style="margin-top:.5rem;display:flex;gap:.5rem;align-items:center">
-    <input class="setting-input" type="password" id="claude-key-in"
-      value="${esc(cfg.claudeApiKey||'')}"
-      placeholder="sk-ant-…"
+    <input class="setting-input" type="password" id="gemini-key-in"
+      value="${esc(cfg.geminiApiKey||'')}"
+      placeholder="AIza…"
       style="flex:1;font-size:.8rem"
-      oninput="saveCfgField('claudeApiKey',this.value)">
-    <button class="btn btn-sm btn-ghost" onclick="document.getElementById('claude-key-in').type=document.getElementById('claude-key-in').type==='password'?'text':'password'">👁</button>
+      oninput="saveCfgField('geminiApiKey',this.value)">
+    <button class="btn btn-sm btn-ghost" onclick="document.getElementById('gemini-key-in').type=document.getElementById('gemini-key-in').type==='password'?'text':'password'">👁</button>
   </div>
-  ${cfg.claudeApiKey?`<div style="font-size:.75rem;color:#7AA97C;margin-top:.4rem">✅ Clé configurée — Luna est en mode intelligent !</div>`:`<div style="font-size:.75rem;color:var(--ts);margin-top:.4rem">Sans clé : Luna locale · Avec clé : Luna niveau Claude ✨</div>`}
+  ${cfg.geminiApiKey?`<div style="font-size:.75rem;color:#7AA97C;margin-top:.4rem">✅ Clé configurée — Luna est en mode intelligent !</div>`:`<div style="font-size:.75rem;color:var(--ts);margin-top:.4rem">Sans clé : Luna locale · Avec clé : Luna niveau Gemini ✨</div>`}
 </div>
 
 <!-- Données -->
