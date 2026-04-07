@@ -1,4 +1,4 @@
-const V = 'planify-v25';
+const V = 'planify-v26';
 const STATIC = [
   '/apple-touch-icon-180.png', '/apple-touch-icon.png',
   '/icon.svg', '/manifest.json'
