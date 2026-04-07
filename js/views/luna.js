@@ -893,7 +893,19 @@ async function _lunaAsk(msg){
       return;
     }
     try{
-      const reply=await _callClaudeAPI(msg,D,p,apiKey);
+      // Retry automatique si 429 (rate limit)
+      let reply, lastErr;
+      for(let attempt=0; attempt<3; attempt++){
+        try{
+          reply=await _callClaudeAPI(msg,D,p,apiKey);
+          break;
+        }catch(err){
+          lastErr=err;
+          if(err.message.includes('429') && attempt<2){
+            await new Promise(r=>setTimeout(r, (attempt+1)*3000)); // 3s, 6s
+          } else throw err;
+        }
+      }
       _lunaTyping=false;
       _lunaMsgs.push({role:'luna',text:reply,ts:_lunaTs()});
       _lunaSaveMsgs();
@@ -905,7 +917,7 @@ async function _lunaAsk(msg){
       let fb;
       if(e.message.includes('401')) fb=`Clé API invalide **${p}** 🔑\nVérifie-la dans **Réglages** !`;
       else if(e.message.includes('403')) fb=`Accès refusé **${p}** 🔑 — ta clé n'a pas les droits nécessaires.`;
-      else if(e.message.includes('429')) fb=`Trop de messages **${p}** ⏳ — attends quelques secondes et réessaie !`;
+      else if(e.message.includes('429')) fb=`Je suis un peu surchargée là **${p}** ⏳ — réessaie dans 1 minute, c'est la limite gratuite de Gemini !`;
       else if(e.message.includes('CORS')||e.message.includes('fetch')) fb=`Problème de connexion **${p}** 🌐 — vérifie ta connexion internet.`;
       else fb=_lunaThink(msg);
       _lunaMsgs.push({role:'luna',text:fb,ts:_lunaTs()});
