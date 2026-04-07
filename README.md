@@ -1,190 +1,244 @@
 <div align="center">
 
-# 🌸 Planify
+<img src="https://readme-typing-svg.demolab.com?font=Playfair+Display&size=42&duration=3000&pause=1000&color=C4778E&center=true&vCenter=true&width=600&lines=🌸+Planify;Ton+appli+préférée+t'attend." alt="Planify" />
 
-**Ton espace personnel. Organisée, sereine, et un peu girly.**
+**L'application qui organise ta vie d'étudiante — avec style.**
 
-![PWA](https://img.shields.io/badge/PWA-100%25%20offline-c4778e?style=flat-square&logo=pwa&logoColor=white)
-![Firebase](https://img.shields.io/badge/Firebase-Auth%20%2B%20Hosting-ffca28?style=flat-square&logo=firebase&logoColor=black)
-![Vanilla JS](https://img.shields.io/badge/Vanilla%20JS-no%20framework-f7df1e?style=flat-square&logo=javascript&logoColor=black)
-![License](https://img.shields.io/badge/license-MIT-db7093?style=flat-square)
-![Lang](https://img.shields.io/badge/langue-français-7A2E50?style=flat-square)
+<br>
+
+[![PWA](https://img.shields.io/badge/✦_PWA-100%25_offline-c4778e?style=for-the-badge&logoColor=white)](https://cherifisarah.github.io/Planify)
+[![Gemini](https://img.shields.io/badge/✦_Luna_IA-Gemini_2.0-db7093?style=for-the-badge)](https://cherifisarah.github.io/Planify)
+[![Firebase](https://img.shields.io/badge/✦_Firebase-Auth_%2B_Sync-ffca28?style=for-the-badge&logoColor=black)](https://cherifisarah.github.io/Planify)
+[![Français](https://img.shields.io/badge/✦_Langue-Français-7A2E50?style=for-the-badge)](https://cherifisarah.github.io/Planify)
+
+<br>
+
+*Parce qu'une bonne organisation ça change vraiment tout.*
 
 </div>
 
 ---
-
-> Une app pensée pour les étudiantes qui jonglent entre les cours, les deadlines, les listes de courses et leur bien-être — sans avoir à ouvrir dix applis différentes.
 
 <div align="center">
 
-![Aperçu de Planify](https://via.placeholder.com/800x450/7A2E50/ffffff?text=📸+Capture+d%27écran+Planify)
-
-*Accueil · Notes · Agenda · Luna IA · Bien-être*
+## ✨ Pourquoi Planify ?
 
 </div>
 
+T'as déjà eu **dix applis ouvertes en même temps** — l'agenda dans un coin, les notes dans un autre, les courses dans les mémos vocaux, et les moyennes sur un post-it froissé au fond de ton sac ?
+
+**Planify, c'est fini tout ça.**
+
+Une seule appli, pensée de A à Z pour les étudiantes. Belle, rapide, qui marche même sans connexion, et avec une IA intégrée qui te parle vraiment — pas comme un robot.
+
 ---
 
-## Ce que fait l'app
+<div align="center">
 
-### 🤖 Luna — L'assistante IA intégrée
+## 🌟 Ce que tu vas adorer
 
-Luna c'est le truc dont on est le plus fières. Une IA 100% offline, qui parle vraiment français — y compris le texto. Elle comprend `"slt cv ?"`, `"c koi ma moy"`, `"fo que je fasse quoi auj"`. Pas de serveur, pas d'API externe, tout tourne dans le navigateur.
+</div>
 
-- Résumé de ta journée / semaine en un message
-- Calcul de moyennes à la demande
-- Gestion de notes, tâches et courses par la voix ou le texte
-- 25+ intents, scoring NLP, mémoire de contexte courante
-- Mode vocal avec reconnaissance de la parole
+<br>
 
-### 📝 Notes
+### 🤖 Luna — Ton assistante perso
 
-Éditeur de texte enrichi avec formatage (gras, italique, titres), tableaux, images, et organisation par matière. Tes notes restent là, même sans connexion.
+> *"luna keskon mange ce soir"* · *"c koi ma moy en maths"* · *"rajoute du lait dans les courses"*
 
-### 📅 Agenda
+Luna c'est pas un chatbot classique. Elle te **connaît**. Elle sait tes notes, tes événements du jour, tes habitudes. Elle répond en vrai français — y compris le texto.
 
-Vue calendrier classique + liste des événements à venir. Chaque événement a sa couleur, ses détails, ses rappels. Parfait pour ne plus rater un partiel.
+- 💬 Comprend le langage naturel et les abréviations
+- 🎤 Mode vocal — parle-lui directement
+- ✅ Execute des actions : ajoute des courses, crée des tâches, écrit des notes
+- 🧠 Alimentée par Gemini 2.0 (gratuit) ou 100% offline sans connexion
+- 💾 Mémorise vos conversations
 
-### 🎓 Moyennes
+<br>
 
-Saisis tes notes par matière et par semestre, l'app calcule tout automatiquement. Tu sais en temps réel où tu en es et ce qu'il te faut pour valider.
+### 📝 Notes — L'éditeur qui déchire
 
-### 💗 Bien-être
+Fini les notes moches et désorganisées.
 
-Le module dont on a le plus besoin et qu'on néglige le plus :
+- **Gras**, *italique*, titres, listes — formatage complet
+- Couleurs, surlignage 💛💗, taille du texte
+- Tableaux intégrés
+- **Export PDF** en un clic
+- Organisées par matière
 
-- Suivi de l'humeur (emoji par jour)
-- Habitudes avec streaks (hydratation, sport, sommeil…)
-- Tracker de cycle
-- Suivi de la consommation d'eau au quotidien
+<br>
+
+### 📅 Agenda — Plus jamais un partiel raté
+
+- Vue calendrier claire et lisible
+- Import de ton emploi du temps universitaire (fichier `.ics` / ADE)
+- Événements colorés avec rappels
+- Rappel automatique 15 min avant chaque événement 🔔
+
+<br>
+
+### 🎓 Moyennes — Ta situation en temps réel
+
+- Saisis tes notes par matière et par semestre
+- Calcul automatique de ta moyenne générale
+- Tu sais exactement **quelle note il te faut pour valider**
+- Semestre 1 et Semestre 2 séparés
+
+<br>
+
+### 💗 Bien-être — Parce que toi aussi tu comptes
+
+C'est la partie qu'on préfère et qu'on oublie trop souvent.
+
+- **Humeur du jour** — un emoji, une couleur, une trace
+- **Habitudes** avec streaks (hydratation 💧, sport 🏃, sommeil 🌙…)
+- **Tracker de cycle** avec prédictions et rappels J-2
+- **Suivi d'eau** quotidien — 8 verres, c'est l'objectif
+- Historique de tes émotions sur plusieurs semaines
+
+<br>
 
 ### ✅ Tâches & 🛒 Courses
 
-To-do lists simples et efficaces. Les courses sont triées par catégorie — fini de passer trois fois devant les pâtes.
+Simple, efficace, sans fioriture.
 
----
-
-## Stack
-
-```
-HTML · CSS · JavaScript (Vanilla, sans framework)
-Firebase Auth        — connexion email + Google
-Firebase Hosting     — déploiement
-Service Worker       — cache offline complet
-Web Speech API       — reconnaissance vocale pour Luna
-Playfair Display     — typographie principale
-Inter                — corps de texte
-```
-
-Aucun bundler, aucune dépendance npm. Juste des fichiers. C'est voulu.
-
----
-
-## Lancer en local
-
-```bash
-# 1. Cloner
-git clone https://github.com/CHERIFISarah/Planify.git
-cd Planify
-
-# 2. Lancer un petit serveur local (Python 3 suffit)
-python -m http.server 3456
-```
-
-Ouvre `http://localhost:3456` — l'app se charge, et grâce au service worker elle est disponible offline dès la deuxième visite.
-
-> **Note iOS** : pour installer l'app sur iPhone, ouvre le site dans Safari > Partager > Sur l'écran d'accueil. Chrome sur iOS ne supporte pas encore l'installation de PWA.
-
----
-
-## Configuration Firebase
-
-L'app a besoin d'un projet Firebase pour l'authentification et la sync cloud.
-
-**1. Crée un projet sur [console.firebase.google.com](https://console.firebase.google.com)**
-
-**2. Active Authentication** (Email/Mot de passe + Google)
-
-**3. Active Firestore** en mode production
-
-**4. Copie tes clés dans `js/firebase-config.js` :**
-
-```js
-// js/firebase-config.js
-const firebaseConfig = {
-  apiKey:            "ta-clé",
-  authDomain:        "ton-projet.firebaseapp.com",
-  projectId:         "ton-projet",
-  storageBucket:     "ton-projet.appspot.com",
-  messagingSenderId: "123456789",
-  appId:             "1:123456789:web:abcdef"
-};
-```
-
-**5. Déploie sur Firebase Hosting :**
-
-```bash
-npm install -g firebase-tools
-firebase login
-firebase init hosting   # pointe vers le dossier racine "."
-firebase deploy --only hosting
-```
-
----
-
-## Structure du projet
-
-```
-Planify/
-├── index.html              # Shell de l'app (nav, canvas sparkle)
-├── manifest.json           # Config PWA
-├── sw.js                   # Service Worker — cache offline
-├── css/
-│   └── main.css            # Tout le style (variables, thème rose)
-└── js/
-    ├── app.js              # Router, init, gestion auth
-    ├── data.js             # Couche données (Firestore + localStorage)
-    ├── firebase-config.js  # Clés Firebase (à ne pas commit en prod)
-    ├── luna-worker.js      # Worker NLP de Luna
-    └── views/
-        ├── dashboard.js    # Accueil / résumé
-        ├── notes.js        # Éditeur de notes
-        ├── calendar.js     # Agenda
-        ├── grades.js       # Moyennes
-        ├── wellness.js     # Bien-être
-        ├── tasks.js        # Tâches
-        ├── shopping.js     # Courses
-        ├── luna.js         # Interface + moteur IA
-        └── settings.js     # Paramètres compte
-```
-
----
-
-## Roadmap
-
-- [ ] Widgets recap sur l'écran d'accueil (iOS 17+)
-- [ ] Export PDF du relevé de notes
-- [ ] Partage de listes de courses entre amies
-- [ ] Notifications push pour les rappels d'événements
-- [ ] Dark mode (avec thème mauve profond)
-
----
-
-## Contribuer
-
-C'est un projet perso / scolaire, mais les issues et PRs sont les bienvenues. Si tu veux ajouter une fonctionnalité, ouvre une issue d'abord pour qu'on en discute.
-
----
-
-## Licence
-
-MIT — fais-en ce que tu veux, mais garde la mention d'origine.
+- To-do list avec priorités et deadlines
+- Liste de courses triée par catégorie — fini de repasser devant les pâtes
+- **Luna peut ajouter à ta liste directement** en vocal ou en texte
 
 ---
 
 <div align="center">
 
-Fait avec du café, des post-its et beaucoup de rose 🌸
+## 📱 Installable sur ton téléphone
+
+</div>
+
+Planify est une **PWA** (Progressive Web App) — ça veut dire qu'elle s'installe comme une vraie appli, sans passer par l'App Store.
+
+| Appareil | Comment installer |
+|---|---|
+| 📱 **iPhone** | Safari → Partager → Sur l'écran d'accueil |
+| 🤖 **Android** | Chrome → Menu → Installer l'application |
+| 💻 **PC / Mac** | Chrome → icône ➕ dans la barre d'adresse |
+
+> Fonctionne **hors ligne** dès la première visite. Pas de connexion ? Luna continue en mode local. 💪
+
+---
+
+<div align="center">
+
+## 🛠 Pour les curieuses (stack technique)
+
+</div>
+
+```
+HTML · CSS · JavaScript (Vanilla — zéro framework)
+Firebase Auth        — connexion email + Google
+Firestore            — synchronisation cloud
+Service Worker       — mode offline complet
+Gemini 2.0 Flash     — IA de Luna (gratuit)
+Web Speech API       — reconnaissance vocale
+Playfair Display     — police principale
+Inter                — corps de texte
+```
+
+Aucun bundler. Aucune dépendance npm. Des fichiers propres, du code lisible. C'est voulu.
+
+---
+
+<div align="center">
+
+## 🚀 Lancer le projet
+
+</div>
+
+```bash
+# Cloner le repo
+git clone https://github.com/CHERIFISarah/Planify.git
+cd Planify
+
+# Lancer avec Node.js
+node -e "require('http').createServer((req,res)=>{
+  const fs=require('fs'), p=require('path');
+  let f=p.join(__dirname,req.url==='/'?'/index.html':req.url.split('?')[0]);
+  fs.existsSync(f)&&fs.statSync(f).isFile()
+    ? res.writeHead(200).end(fs.readFileSync(f))
+    : res.writeHead(200).end(fs.readFileSync(p.join(__dirname,'index.html')));
+}).listen(3000,()=>console.log('http://localhost:3000'))"
+
+# Ou avec Python 3
+python -m http.server 3000
+```
+
+Ouvre **http://localhost:3000** — c'est prêt 🌸
+
+---
+
+<div align="center">
+
+## 🔑 Activer Luna IA (optionnel, gratuit)
+
+</div>
+
+Sans clé API, Luna fonctionne déjà très bien en mode local. Mais avec une clé Gemini, elle devient vraiment intelligente.
+
+1. Va sur **[aistudio.google.com](https://aistudio.google.com/app/apikey)**
+2. Crée une clé gratuite (pas de carte bancaire)
+3. Dans Planify → **Réglages** → **Luna IA 🌸** → colle ta clé
+
+> Gratuit · 1 500 requêtes/jour · Aucune limite bancaire
+
+---
+
+<div align="center">
+
+## 🗂 Structure du projet
+
+</div>
+
+```
+Planify/
+├── index.html              ← Shell de l'app
+├── manifest.json           ← Config PWA
+├── sw.js                   ← Service Worker (cache offline)
+├── css/
+│   └── main.css            ← Tout le style (thème rose, dark mode)
+└── js/
+    ├── app.js              ← Router & init
+    ├── data.js             ← Données (Firestore + localStorage)
+    ├── firebase-config.js  ← Clés Firebase
+    └── views/
+        ├── dashboard.js    ← Accueil
+        ├── notes.js        ← Éditeur de notes
+        ├── calendar.js     ← Agenda
+        ├── grades.js       ← Moyennes
+        ├── wellness.js     ← Bien-être
+        ├── tasks.js        ← Tâches
+        ├── shopping.js     ← Courses
+        ├── luna.js         ← Luna IA
+        └── settings.js     ← Réglages
+```
+
+---
+
+<div align="center">
+
+## 🌷 Roadmap
+
+- [ ] Notifications push réelles (Firebase Cloud Messaging)
+- [ ] Export PDF du relevé de notes complet
+- [ ] Partage de listes entre amies
+- [ ] Widgets iOS (écran d'accueil)
+- [ ] Thème mauve / personnalisable
+
+---
+
+<br>
+
+*Fait avec beaucoup de rose, un peu de café, et l'envie que cette appli existe vraiment* 🌸
+
+<br>
+
+**— Sarah ✨**
 
 </div>
