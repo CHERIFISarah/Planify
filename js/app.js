@@ -31,8 +31,9 @@ function go(page, params = {}) {
 
   // Nav visible uniquement pour les pages principales (cachée pendant onboarding)
   const hideNav   = ['auth','onboarding','editor','settings','subject','list','shopping'];
+  const hideFab   = [...hideNav, 'luna']; // FAB caché aussi sur Luna (gêne la saisie)
   if (nav) nav.style.display = hideNav.includes(page) ? 'none' : '';
-  if (fab) fab.style.display = hideNav.includes(page) ? 'none' : '';
+  if (fab) fab.style.display = hideFab.includes(page) ? 'none' : '';
 
   // Éditeur overlay → géré séparément
   if (page === 'editor') {
