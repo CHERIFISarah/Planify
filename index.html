@@ -145,31 +145,56 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 
 <!-- Scripts — order matters -->
-<script src="js/data.js?v=29"></script>
-<script src="js/firebase-config.js?v=29"></script>
-<script src="js/views/dashboard.js?v=29"></script>
-<script src="js/views/notes.js?v=29"></script>
-<script src="js/views/calendar.js?v=29"></script>
-<script src="js/views/wellness.js?v=29"></script>
-<script src="js/views/tasks.js?v=29"></script>
-<script src="js/views/grades.js?v=29"></script>
-<script src="js/views/shopping.js?v=29"></script>
-<script src="js/views/settings.js?v=29"></script>
-<script src="js/views/luna.js?v=29"></script>
-<script src="js/app.js?v=29"></script>
+<script src="js/data.js?v=30"></script>
+<script src="js/firebase-config.js?v=30"></script>
+<script src="js/views/dashboard.js?v=30"></script>
+<script src="js/views/notes.js?v=30"></script>
+<script src="js/views/calendar.js?v=30"></script>
+<script src="js/views/wellness.js?v=30"></script>
+<script src="js/views/tasks.js?v=30"></script>
+<script src="js/views/grades.js?v=30"></script>
+<script src="js/views/shopping.js?v=30"></script>
+<script src="js/views/settings.js?v=30"></script>
+<script src="js/views/luna.js?v=30"></script>
+<script src="js/app.js?v=30"></script>
 
-<!-- ── Tableau : insertion directe sans modale ── -->
+<!-- ── Tableau : insertion avec choix lignes/colonnes ── -->
 <script>
 function insertTable() {
+  openModal(`
+<div class="modal-body" style="max-width:280px;margin:0 auto">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:1rem">
+    <div>
+      <label class="form-label">Colonnes</label>
+      <input id="tbl-cols" class="form-input" type="number" min="1" max="10" value="3"
+        style="text-align:center;font-size:1.1rem;font-weight:700">
+    </div>
+    <div>
+      <label class="form-label">Lignes</label>
+      <input id="tbl-rows" class="form-input" type="number" min="1" max="20" value="3"
+        style="text-align:center;font-size:1.1rem;font-weight:700">
+    </div>
+  </div>
+  <div class="modal-actions">
+    <button class="btn btn-ghost" onclick="closeModal()">Annuler</button>
+    <button class="btn" onclick="_doInsertTable()">⊞ Insérer</button>
+  </div>
+</div>`, '⊞ Tableau');
+}
+
+function _doInsertTable() {
+  var COLS = Math.max(1, Math.min(10, parseInt(document.getElementById('tbl-cols').value) || 3));
+  var ROWS = Math.max(1, Math.min(20, parseInt(document.getElementById('tbl-rows').value) || 3));
+  closeModal();
+
+  setTimeout(function() {
   var el = document.getElementById('e-content');
   if (!el) return;
 
-  // Construire un tableau 3x3 directement en DOM
   var table = document.createElement('table');
   table.style.cssText = 'border-collapse:collapse;width:100%;margin:12px 0;table-layout:auto';
 
   var tbody = document.createElement('tbody');
-  var ROWS = 3, COLS = 3;
 
   for (var r = 0; r < ROWS; r++) {
     var tr = document.createElement('tr');
@@ -233,6 +258,7 @@ function insertTable() {
   }
 
   el.dispatchEvent(new Event('input'));
+  }, 250);
 }
 </script>
 </body>
