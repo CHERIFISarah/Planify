@@ -145,161 +145,95 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 
 <!-- Scripts — order matters -->
-<script src="js/data.js?v=28"></script>
-<script src="js/firebase-config.js?v=28"></script>
-<script src="js/views/dashboard.js?v=28"></script>
-<script src="js/views/notes.js?v=28"></script>
-<script src="js/views/calendar.js?v=28"></script>
-<script src="js/views/wellness.js?v=28"></script>
-<script src="js/views/tasks.js?v=28"></script>
-<script src="js/views/grades.js?v=28"></script>
-<script src="js/views/shopping.js?v=28"></script>
-<script src="js/views/settings.js?v=28"></script>
-<script src="js/views/luna.js?v=28"></script>
-<script src="js/app.js?v=28"></script>
+<script src="js/data.js?v=29"></script>
+<script src="js/firebase-config.js?v=29"></script>
+<script src="js/views/dashboard.js?v=29"></script>
+<script src="js/views/notes.js?v=29"></script>
+<script src="js/views/calendar.js?v=29"></script>
+<script src="js/views/wellness.js?v=29"></script>
+<script src="js/views/tasks.js?v=29"></script>
+<script src="js/views/grades.js?v=29"></script>
+<script src="js/views/shopping.js?v=29"></script>
+<script src="js/views/settings.js?v=29"></script>
+<script src="js/views/luna.js?v=29"></script>
+<script src="js/app.js?v=29"></script>
 
-<!-- ── Tableau : insertion DOM pure (styles garantis) ── -->
+<!-- ── Tableau : insertion directe sans modale ── -->
 <script>
-window.addEventListener('load', function() {
+function insertTable() {
+  var el = document.getElementById('e-content');
+  if (!el) return;
 
-  /* ── Ouvre la modale de configuration du tableau ── */
-  window.insertTable = function() {
-    openModal(`
-<div class="modal-body">
-  <div class="form-row">
-    <div class="form-group" style="flex:1">
-      <label class="form-label">Colonnes</label>
-      <input class="form-input" id="tbl-cols" type="number" min="1" max="10" value="3" style="width:70px">
-    </div>
-    <div class="form-group" style="flex:1">
-      <label class="form-label">Lignes</label>
-      <input class="form-input" id="tbl-rows" type="number" min="1" max="20" value="3" style="width:70px">
-    </div>
-  </div>
-  <div class="form-row">
-    <div class="form-group" style="flex:1">
-      <label class="form-label">🎨 Fond en-tête</label>
-      <input class="form-input" id="tbl-hbg" type="color" value="#C4778E" style="padding:.2rem;height:38px;width:100%">
-    </div>
-    <div class="form-group" style="flex:1">
-      <label class="form-label">🔤 Texte en-tête</label>
-      <input class="form-input" id="tbl-htxt" type="color" value="#ffffff" style="padding:.2rem;height:38px;width:100%">
-    </div>
-  </div>
-  <div class="form-row">
-    <div class="form-group" style="flex:1">
-      <label class="form-label">🎨 Fond cellules</label>
-      <input class="form-input" id="tbl-cbg" type="color" value="#ffffff" style="padding:.2rem;height:38px;width:100%">
-    </div>
-    <div class="form-group" style="flex:1">
-      <label class="form-label">🔤 Texte cellules</label>
-      <input class="form-input" id="tbl-ctxt" type="color" value="#333333" style="padding:.2rem;height:38px;width:100%">
-    </div>
-  </div>
-  <div class="form-group">
-    <label class="form-label">Taille du texte</label>
-    <select class="setting-select" id="tbl-fsize" style="width:100%">
-      <option value="11px">Petit (11px)</option>
-      <option value="13px">Normal (13px)</option>
-      <option value="15px" selected>Moyen (15px)</option>
-      <option value="17px">Grand (17px)</option>
-      <option value="20px">Très grand (20px)</option>
-    </select>
-  </div>
-  <div class="modal-actions">
-    <button class="btn btn-ghost" onclick="closeModal()">Annuler</button>
-    <button class="btn" onclick="doInsertTable()">Insérer ✓</button>
-  </div>
-</div>`, '⊞ Tableau');
-  };
+  // Construire un tableau 3x3 directement en DOM
+  var table = document.createElement('table');
+  table.style.cssText = 'border-collapse:collapse;width:100%;margin:12px 0;table-layout:auto';
 
-  /* ── Construit le tableau via DOM pur → styles GARANTIS ── */
-  window.doInsertTable = function() {
-    // 1. Lire les valeurs AVANT de fermer la modale
-    var rows  = Math.max(1, Math.min(20, parseInt(document.getElementById('tbl-rows').value) || 3));
-    var cols  = Math.max(1, Math.min(10, parseInt(document.getElementById('tbl-cols').value) || 3));
-    var hBg   = document.getElementById('tbl-hbg').value   || '#C4778E';
-    var hTxt  = document.getElementById('tbl-htxt').value  || '#ffffff';
-    var cBg   = document.getElementById('tbl-cbg').value   || '#ffffff';
-    var cTxt  = document.getElementById('tbl-ctxt').value  || '#333333';
-    var fsize = document.getElementById('tbl-fsize').value || '15px';
+  var tbody = document.createElement('tbody');
+  var ROWS = 3, COLS = 3;
 
-    closeModal();
+  for (var r = 0; r < ROWS; r++) {
+    var tr = document.createElement('tr');
+    for (var c = 0; c < COLS; c++) {
+      var isH = (r === 0);
+      var cell = document.createElement(isH ? 'th' : 'td');
+      cell.contentEditable = 'true';
+      cell.textContent = isH ? 'En-tête' : '';
+      cell.style.cssText = [
+        'border:' + (isH ? '2px solid #C4778E' : '1.5px solid #ddd'),
+        'padding:8px 12px',
+        'min-width:80px',
+        'font-size:14px',
+        'font-family:inherit',
+        'text-align:left',
+        'vertical-align:top',
+        isH ? 'background:#C4778E;color:#fff;font-weight:700' : 'background:#fff;color:#1C0F1A'
+      ].join(';');
+      tr.appendChild(cell);
+    }
+    tbody.appendChild(tr);
+  }
 
-    // 2. Insérer après fermeture de la modale (DOM stable)
-    setTimeout(function() {
-      var el = document.getElementById('e-content');
-      if (!el) return;
+  table.appendChild(tbody);
 
-      // --- Construire le tableau entièrement en DOM ---
-      // (jamais de innerHTML : les styles inline sont appliqués DIRECTEMENT)
-
-      var table = document.createElement('table');
-      table.style.borderCollapse = 'collapse';
-      table.style.width          = '100%';
-      table.style.margin         = '10px 0';
-      table.style.tableLayout    = 'auto';
-
-      var tbody = document.createElement('tbody');
-
-      for (var r = 0; r < rows; r++) {
-        var tr = document.createElement('tr');
-
-        for (var c = 0; c < cols; c++) {
-          var isHeader = (r === 0);
-          var cell = document.createElement(isHeader ? 'th' : 'td');
-          cell.contentEditable = 'true';
-          cell.textContent = isHeader ? 'En-tête' : 'Cellule';
-
-          // Appliquer les styles directement sur l'élément DOM
-          // → impossible à écraser par une règle CSS de classe
-          cell.style.border      = isHeader ? '2px solid #aaa' : '1.5px solid #ccc';
-          cell.style.padding     = '8px 12px';
-          cell.style.minWidth    = '80px';
-          cell.style.fontSize    = fsize;
-          cell.style.fontFamily  = 'inherit';
-          cell.style.textAlign   = 'left';
-          cell.style.verticalAlign = 'top';
-
-          if (isHeader) {
-            cell.style.backgroundColor = hBg;
-            cell.style.color           = hTxt;
-            cell.style.fontWeight      = '700';
-          } else {
-            cell.style.backgroundColor = cBg;
-            cell.style.color           = cTxt;
-            cell.style.fontWeight      = 'normal';
-          }
-
-          tr.appendChild(cell);
-        }
-        tbody.appendChild(tr);
-      }
-
-      table.appendChild(tbody);
-
-      // Insérer dans l'éditeur
+  // Insérer à la position du curseur ou à la fin
+  el.focus();
+  var sel = window.getSelection();
+  if (sel && sel.rangeCount > 0) {
+    var range = sel.getRangeAt(0);
+    // S'assurer qu'on est dans e-content
+    if (el.contains(range.commonAncestorContainer)) {
+      range.deleteContents();
+      range.insertNode(document.createElement('br'));
+      range.insertNode(table);
+      // Placer le curseur après le tableau
+      range.setStartAfter(table);
+      range.collapse(true);
+      sel.removeAllRanges();
+      sel.addRange(range);
+    } else {
       el.appendChild(document.createElement('br'));
       el.appendChild(table);
-      el.appendChild(document.createElement('br'));
+    }
+  } else {
+    el.appendChild(document.createElement('br'));
+    el.appendChild(table);
+  }
 
-      // Focus sur la première cellule
-      var firstCell = table.querySelector('th, td');
-      if (firstCell) {
-        firstCell.focus();
-        var range = document.createRange();
-        range.selectNodeContents(firstCell);
-        range.collapse(false);
-        var sel = window.getSelection();
-        if (sel) { sel.removeAllRanges(); sel.addRange(range); }
-      }
+  el.appendChild(document.createElement('br'));
 
-      el.dispatchEvent(new Event('input'));
-      el.scrollTop = el.scrollHeight;
-    }, 250);
-  };
+  // Focus première cellule
+  var first = table.querySelector('th');
+  if (first) {
+    first.focus();
+    var r2 = document.createRange();
+    r2.selectNodeContents(first);
+    r2.collapse(false);
+    var s2 = window.getSelection();
+    if (s2) { s2.removeAllRanges(); s2.addRange(r2); }
+  }
 
-});
+  el.dispatchEvent(new Event('input'));
+}
 </script>
 </body>
 </html>
