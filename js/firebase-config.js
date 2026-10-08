@@ -61,24 +61,31 @@ const FB = {
   saveKey(key, value) {
     const uid = auth.currentUser?.uid;
     if (!uid) return;
+    // Firestore refuse tout document > 1 MiB : on prévient plutôt que
+    // d'échouer en silence (les données restent dispo en local).
+    const approxSize = JSON.stringify(value).length;
+    if (approxSize > 900 * 1024) {
+      console.warn('[FB] saveKey: document trop volumineux pour Firestore, sync ignorée', key, approxSize);
+      if (typeof showToast === 'function') {
+        showToast('⚠️ Trop volumineux pour la sauvegarde cloud (réduis la taille des images)');
+      }
+      return;
+    }
     const docId = key.replace(/^pl_/, '');
     db.collection('users').doc(uid)
       .collection('data').doc(docId)
       .set({ v: value })
-      .catch(() => {});
+      .catch(e => {
+        console.error('[FB] saveKey failed:', key, e);
+        if (typeof showToast === 'function') showToast('⚠️ Sauvegarde cloud échouée');
+      });
   },
 
   // Upload tout le localStorage actuel vers Firestore (première connexion)
   async uploadAll(uid) {
-    const keys = [
-      'pl_cfg','pl_subjects','pl_notes','pl_events','pl_ics',
-      'pl_todos','pl_lists','pl_moods','pl_habits','pl_hlogs',
-      'pl_cycle','pl_cyclecfg','pl_water','pl_focus',
-      'pl_gratitude','pl_wgoals'
-    ];
     try {
       const batch = db.batch();
-      keys.forEach(k => {
+      ALL_DATA_KEYS.forEach(k => {
         const raw = localStorage.getItem(k);
         if (!raw) return;
         try {
@@ -91,6 +98,23 @@ const FB = {
       await batch.commit();
     } catch (e) {
       console.warn('[FB] uploadAll:', e.message);
+    }
+  },
+
+  // Supprime tous les documents de données Firestore d'un utilisateur
+  // (utilisé par le reset total des réglages)
+  async deleteAll(uid) {
+    try {
+      const batch = db.batch();
+      ALL_DATA_KEYS.forEach(k => {
+        const docId = k.replace(/^pl_/, '');
+        const ref   = db.collection('users').doc(uid)
+                       .collection('data').doc(docId);
+        batch.delete(ref);
+      });
+      await batch.commit();
+    } catch (e) {
+      console.warn('[FB] deleteAll:', e.message);
     }
   },
 

@@ -559,7 +559,9 @@ textarea.inp{resize:none;line-height:1.65}
 #fab:active{transform:scale(.9) rotate(90deg)}
 
 /* ─── Modal ─────────────────────────────────────────────── */
-#modal-wrap{position:fixed;inset:0;z-index:200;display:none;align-items:flex-end;justify-content:center}
+/* z-index 400 : au-dessus de #editor-overlay (300), sinon toute modale ouverte
+   depuis l'éditeur de note (tableau, etc.) reste invisible dessous */
+#modal-wrap{position:fixed;inset:0;z-index:400;display:none;align-items:flex-end;justify-content:center}
 #modal-wrap.open{display:flex}
 #modal-bg{position:absolute;inset:0;background:rgba(28,15,26,.52);backdrop-filter:blur(9px) saturate(140%);-webkit-backdrop-filter:blur(9px) saturate(140%);animation:bgFadeIn .25s both}
 @keyframes bgFadeIn{from{opacity:0}to{opacity:1}}

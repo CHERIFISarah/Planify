@@ -67,7 +67,7 @@ function _getData() {
   const g = (fn,fb) => { try{ return fn()||fb; }catch(e){ return fb; } };
   return {
     events  : g(()=>LS.events(),  []),
-    tasks   : g(()=>LS.tasks(),   []),
+    tasks   : g(()=>LS.todos(),   []),
     todos   : g(()=>LS.todos(),   []),
     grades  : g(()=>LS.grades(),  {s1:[],s2:[]}),
     shopping: g(()=>LS.shopping(),[]),
@@ -309,7 +309,7 @@ function _hResume(q,D,p,now){
   r+=`📅 Événements : **${evs.length||'aucun'}**`;
   if(evs.length) r+='\n'+evs.slice(0,3).map(e=>`  • ${_tf(e.startTime)||'—'} ${e.title}`).join('\n');
   r+=`\n✅ Tâches : **${pend.length} en attente**`;
-  if(pend.length) r+='\n'+pend.slice(0,3).map(t=>`  • ${t.title}`).join('\n');
+  if(pend.length) r+='\n'+pend.slice(0,3).map(t=>`  • ${t.text}`).join('\n');
   r+=`\n🌿 Habitudes : **${doneH.length}/${actH.length}** faites`;
   r+=`\n💧 Eau : **${water}/8** verres`;
   if(a2!==null) r+=`\n🎓 Moy. S2 : **${a2.toFixed(2)}/20** ${_gradeEmoji(a2)}`;
@@ -363,7 +363,7 @@ function _hTasks(q,D,p,now){
   const done=D.tasks.filter(t=>t.done);
   if(!pend.length) return `Bravo **${p}** ! 🎉 Toutes tes tâches sont terminées ! Tu es incroyable ✨`;
   const urgent=pend.filter(t=>t.priority==='high'||t.urgent);
-  const list=pend.slice(0,6).map(t=>`• ${t.title}${t.dueDate?` _(échéance : ${t.dueDate})_`:''}`).join('\n');
+  const list=pend.slice(0,6).map(t=>`• ${t.text}${t.due?` _(échéance : ${t.due})_`:''}`).join('\n');
   const extra=pend.length>6?`\n_...et ${pend.length-6} autres._`:'';
   let r=`**${pend.length} tâche${pend.length>1?'s':''}** en cours ${p} ✅\n\n${list}${extra}`;
   if(urgent.length) r+=`\n\n⚠️ **${urgent.length} urgente${urgent.length>1?'s':''}** — à faire en priorité !`;
@@ -675,7 +675,7 @@ function _lunaAction(msg,p){
     const m=msg.match(rx);
     if(m&&m[1].trim().length>1){
       const title=m[1].trim();
-      LS.s('pl_todos',[...LS.todos(),{id:uid(),title:cap(title),done:false,priority:'normal',dueDate:null,createdAt:Date.now()}]);
+      LS.s('pl_todos',[...LS.todos(),{id:uid(),listId:null,text:cap(title),done:false,priority:'normal',due:null,note:'',createdAt:Date.now()}]);
       _lunaCtx='tasks';
       return `✅ Tâche ajoutée **${p}** ! ✅\n\n_"${cap(title)}"_\n\nRetrouve-la dans l'onglet **Tâches** !`;
     }
@@ -782,7 +782,7 @@ Tu connais TOUTES les données de ${p} — utilise-les pour des réponses person
 ═══ DONNÉES DE ${p.toUpperCase()} ═══
 📅 Aujourd'hui : ${now.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})} à ${now.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}
 📅 Événements du jour : ${evs.length?evs.map(e=>`${e.startTime?e.startTime+' ':''}"${e.title}"`).join(', '):'Aucun'}
-✅ Tâches en attente : ${pend.length?pend.map(t=>'"'+t.title+'"').join(', '):'Aucune'}
+✅ Tâches en attente : ${pend.length?pend.map(t=>'"'+t.text+'"').join(', '):'Aucune'}
 🎓 Moyenne S2 : ${a2!==null?a2.toFixed(2)+'/20 ('+_mention(a2)+')':'Non renseignée'}
 💗 Humeur aujourd'hui : ${mo?mo.l+' '+mo.e:'Non enregistrée'}
 🌿 Habitudes : ${doneH.length}/${actH.length} faites aujourd'hui

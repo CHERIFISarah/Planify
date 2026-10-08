@@ -346,7 +346,15 @@ function fmtSize(size) {
   const range = sel.getRangeAt(0);
   const span = document.createElement('span');
   span.style.fontSize = size;
-  range.surroundContents(span);
+  try {
+    range.surroundContents(span);
+  } catch {
+    // La sélection traverse plusieurs éléments (ex: du texte en gras ET normal) :
+    // surroundContents() plante dans ce cas. Repli : extraire puis réinsérer dans le span.
+    const frag = range.extractContents();
+    span.appendChild(frag);
+    range.insertNode(span);
+  }
   triggerEditorInput();
 }
 
@@ -495,7 +503,9 @@ function insertImage() {
 function handleImageFile(input) {
   const f = input.files[0];
   if (!f) return;
-  if (f.size > 3 * 1024 * 1024) { showToast('Image trop lourde (max 3 Mo)'); return; }
+  // Pas de recompression : on garde la photo intacte (qualité d'origine).
+  // La limite sert juste à éviter de bloquer le navigateur sur un fichier énorme.
+  if (f.size > 10 * 1024 * 1024) { showToast('Image trop lourde (max 10 Mo)'); input.value = ''; return; }
   const reader = new FileReader();
   reader.onload = e => {
     const html = `<img src="${e.target.result}" class="note-img" alt="image">`;
@@ -515,9 +525,16 @@ function exitEditor() {
   const ns  = LS.notes();
   const idx = ns.findIndex(n => n.id === _nid);
   if (idx >= 0) {
-    ns[idx].title     = document.getElementById('e-title').value;
-    ns[idx].content   = document.getElementById('e-content').innerHTML;
-    ns[idx].updatedAt = Date.now();
+    const title   = document.getElementById('e-title').value;
+    const content = document.getElementById('e-content').innerHTML;
+    if (!title.trim() && !stripHtml(content).trim()) {
+      // Note vide (créée puis abandonnée sans rien écrire) : ne pas la garder.
+      ns.splice(idx, 1);
+    } else {
+      ns[idx].title     = title;
+      ns[idx].content   = content;
+      ns[idx].updatedAt = Date.now();
+    }
     LS.s('pl_notes', ns);
   }
   document.removeEventListener('selectionchange', updateToolbarState);

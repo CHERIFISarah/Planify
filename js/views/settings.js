@@ -291,10 +291,6 @@ function saveCfgField(key, val) {
   const cfg = LS.cfg();
   cfg[key] = val;
   LS.s('pl_cfg', cfg);
-  if (key === 'name') {
-    const el = document.querySelector('.welcome h1');
-    if (el && val) el.textContent = `Bonjour ${val} ✨`;
-  }
   if (key === 'fontSize') applyFontSize(val);
 }
 
@@ -384,6 +380,10 @@ function exportData() {
     grades:    LS.grades(),
     shopping:  LS.shopping(),
     cfg:       LS.cfg(),
+    water:     LS.g('pl_water')     || {},
+    focus:     LS.g('pl_focus')     || {},
+    gratitude: LS.g('pl_gratitude') || {},
+    wgoals:    LS.g('pl_wgoals')    || {},
   };
   const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
   const a    = document.createElement('a');
@@ -416,6 +416,10 @@ function importData(input) {
       if (d.grades)    LS.s('pl_grades',    d.grades);
       if (d.shopping)  LS.s('pl_shopping',  d.shopping);
       if (d.cfg)       LS.s('pl_cfg',       d.cfg);
+      if (d.water)     LS.s('pl_water',     d.water);
+      if (d.focus)     LS.s('pl_focus',     d.focus);
+      if (d.gratitude) LS.s('pl_gratitude', d.gratitude);
+      if (d.wgoals)    LS.s('pl_wgoals',    d.wgoals);
       showToast('Données restaurées ✓');
       go('dashboard');
     } catch {
@@ -429,10 +433,9 @@ function importData(input) {
 function resetAll() {
   if (!confirm('Effacer TOUTES les données ? Cette action est irréversible.')) return;
   if (!confirm('Es-tu certaine ? Toutes tes notes, tâches et données seront supprimées.')) return;
-  ['pl_subjects','pl_notes','pl_events','pl_ics','pl_moods','pl_habits',
-   'pl_hlogs','pl_cycle','pl_cyclecfg','pl_lists','pl_todos','pl_cfg',
-   'pl_grades','pl_shopping'].forEach(k =>
-    localStorage.removeItem(k));
+  ALL_DATA_KEYS.forEach(k => localStorage.removeItem(k));
+  const uid = auth.currentUser?.uid;
+  if (uid) FB.deleteAll(uid); // sinon les données reviendraient du cloud à la prochaine connexion
   showToast('Données effacées');
   go('dashboard');
 }

@@ -593,6 +593,10 @@ ${newAvg!==null?`
 // ═══════════════════════════════════════════════════════
 //  Export CSV
 // ═══════════════════════════════════════════════════════
+function _csvField(v) {
+  return `"${String(v).replace(/"/g, '""')}"`;
+}
+
 function exportGradesCSV(sem) {
   const data = LS.grades();
   const sems = sem ? [sem] : ['s1','s2'];
@@ -602,13 +606,14 @@ function exportGradesCSV(sem) {
     const modules = data[s] || [];
     modules.forEach(m => {
       const avg = moduleAverage(m);
+      const mName = _csvField(m.name);
       if (m.submodules && m.submodules.length > 0) {
         m.submodules.forEach(sub => {
-          csv += `${s.toUpperCase()},"${m.name}",${m.coef||1},"${sub.name}",${Math.round((sub.weight||0)*100)},${sub.grade!==null&&sub.grade!==undefined?sub.grade:''}\n`;
+          csv += `${s.toUpperCase()},${mName},${m.coef||1},${_csvField(sub.name)},${Math.round((sub.weight||0)*100)},${sub.grade!==null&&sub.grade!==undefined?sub.grade:''}\n`;
         });
-        csv += `${s.toUpperCase()},"${m.name}",${m.coef||1},"=MOYENNE MODULE",,${avg!==null?avg.toFixed(2):''}\n`;
+        csv += `${s.toUpperCase()},${mName},${m.coef||1},"=MOYENNE MODULE",,${avg!==null?avg.toFixed(2):''}\n`;
       } else {
-        csv += `${s.toUpperCase()},"${m.name}",${m.coef||1},,100,${m.grade!==null&&m.grade!==undefined?m.grade:''}\n`;
+        csv += `${s.toUpperCase()},${mName},${m.coef||1},,100,${m.grade!==null&&m.grade!==undefined?m.grade:''}\n`;
       }
     });
     let tc=0,tp=0,hasAll=modules.length>0;
