@@ -61,11 +61,24 @@ const FB = {
   saveKey(key, value) {
     const uid = auth.currentUser?.uid;
     if (!uid) return;
+    // Firestore refuse tout document > 1 MiB : on prévient plutôt que
+    // d'échouer en silence (les données restent dispo en local).
+    const approxSize = JSON.stringify(value).length;
+    if (approxSize > 900 * 1024) {
+      console.warn('[FB] saveKey: document trop volumineux pour Firestore, sync ignorée', key, approxSize);
+      if (typeof showToast === 'function') {
+        showToast('⚠️ Trop volumineux pour la sauvegarde cloud (réduis la taille des images)');
+      }
+      return;
+    }
     const docId = key.replace(/^pl_/, '');
     db.collection('users').doc(uid)
       .collection('data').doc(docId)
       .set({ v: value })
-      .catch(() => {});
+      .catch(e => {
+        console.error('[FB] saveKey failed:', key, e);
+        if (typeof showToast === 'function') showToast('⚠️ Sauvegarde cloud échouée');
+      });
   },
 
   // Upload tout le localStorage actuel vers Firestore (première connexion)

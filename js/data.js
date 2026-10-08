@@ -210,7 +210,20 @@ const SYMPTOMS = ['Crampes','Fatigue','Maux de tête','Ballonnements','Acné','I
 // ═══════════════════════════════════════════════════════
 const LS = {
   g: k  => { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } },
-  s: (k,v) => localStorage.setItem(k, JSON.stringify(v)),
+  s: (k,v) => {
+    try {
+      localStorage.setItem(k, JSON.stringify(v));
+      return true;
+    } catch (e) {
+      console.error('[LS] setItem failed:', k, e);
+      if (typeof showToast === 'function') {
+        showToast(e.name === 'QuotaExceededError'
+          ? '⚠️ Stockage plein : impossible de sauvegarder. Supprime une image ou une note.'
+          : '⚠️ Erreur de sauvegarde');
+      }
+      return false;
+    }
+  },
 
   subjects:  () => LS.g('pl_subjects')  || [],
   notes:     () => LS.g('pl_notes')     || [],
