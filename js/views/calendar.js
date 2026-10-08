@@ -498,10 +498,7 @@ function delSingleOccurrence(baseId, date) {
   go('calendar');
 }
 
-function clearICS() {
-  if (!confirm('Supprimer tous les événements importés ?')) return;
-  LS.s('pl_ics', []); go('calendar');
-}
+// clearICS() est définie dans app.js (seule version, utilisée partout)
 
 function toggleCycleDay(d) {
   const log = LS.cycleLog();
@@ -567,42 +564,6 @@ function _renderCalList(allEv, td) {
   return `<div class="ev-list-container">${html}</div>`;
 }
 
-// ═══════════════════════════════════════════════════════
-//  Notifications push 30 min avant événement
-// ═══════════════════════════════════════════════════════
-function initCalendarNotifications() {
-  if (!('Notification' in window) || Notification.permission !== 'granted') return;
-  if (typeof LS === 'undefined') return;
-  const cfg = LS.cfg();
-  if (cfg.notifEvents === false) return;
-
-  const td = typeof today === 'function' ? today() : new Date().toISOString().slice(0,10);
-  const evs = LS.events ? LS.events() : [];
-  const now = new Date();
-
-  evs.filter(e => e.date === td && e.startTime).forEach(e => {
-    const [hh, mm] = e.startTime.split(':').map(Number);
-    const evTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hh, mm);
-    const notifTime = new Date(evTime.getTime() - 30 * 60 * 1000);
-    const msUntil = notifTime.getTime() - now.getTime();
-    if (msUntil > 0 && msUntil < 8 * 3600 * 1000) {
-      setTimeout(() => {
-        if (Notification.permission === 'granted') {
-          try {
-            new Notification(`⏰ Dans 30 min — ${e.title}`, {
-              body: `📅 ${e.startTime}${e.endTime?' – '+e.endTime:''}${e.location?' · '+e.location:''}`,
-              icon: '/icons/icon-192.png',
-              tag: 'calnotif-' + e.id,
-            });
-          } catch(err) {}
-        }
-      }, msUntil);
-    }
-  });
-}
-
-// Auto-init notifications
-if (typeof document !== 'undefined') {
-  document.addEventListener('DOMContentLoaded', () => setTimeout(initCalendarNotifications, 2500));
-  setInterval(initCalendarNotifications, 3600 * 1000);
-}
+// Les notifications de rappel d'événement sont gérées par
+// scheduleEventReminders() dans app.js (seule version : compatible
+// iOS PWA via le Service Worker, et évite les doublons de notification).

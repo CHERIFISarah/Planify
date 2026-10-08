@@ -206,6 +206,18 @@ const CYCLE_PHASES = [
 const SYMPTOMS = ['Crampes','Fatigue','Maux de tête','Ballonnements','Acné','Irritabilité','Sautes d\'humeur','Sensibilité'];
 
 // ═══════════════════════════════════════════════════════
+//  Liste exhaustive des clés de données utilisateur
+//  (source unique pour export/import, reset, déconnexion,
+//  upload/suppression Firebase — pour éviter d'oublier une
+//  clé dans une des listes quand on en ajoute une nouvelle)
+// ═══════════════════════════════════════════════════════
+const ALL_DATA_KEYS = [
+  'pl_subjects','pl_notes','pl_events','pl_ics','pl_moods','pl_habits',
+  'pl_hlogs','pl_cycle','pl_cyclecfg','pl_lists','pl_todos','pl_cfg',
+  'pl_water','pl_focus','pl_gratitude','pl_wgoals','pl_grades','pl_shopping'
+];
+
+// ═══════════════════════════════════════════════════════
 //  Store — accès localStorage
 // ═══════════════════════════════════════════════════════
 const LS = {

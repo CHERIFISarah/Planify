@@ -1421,7 +1421,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
     const hash  = location.hash.slice(1);
-    const valid = ['dashboard','notes','calendar','wellness','tasks'];
+    const valid = ['dashboard','notes','calendar','wellness','tasks','grades','shopping','luna','settings'];
     go(valid.includes(hash) ? hash : 'dashboard');
   });
 });
@@ -1854,11 +1854,7 @@ function signOutUser() {
   if (!confirm('Se déconnecter de Planify ?')) return;
   FB.signOut().then(() => {
     // Vider le localStorage de cette session
-    ['pl_subjects','pl_notes','pl_events','pl_ics','pl_moods','pl_habits',
-     'pl_hlogs','pl_cycle','pl_cyclecfg','pl_lists','pl_todos','pl_cfg',
-     'pl_water','pl_focus','pl_gratitude','pl_wgoals',
-     'pl_grades','pl_shopping'].forEach(k =>
-      localStorage.removeItem(k));
+    ALL_DATA_KEYS.forEach(k => localStorage.removeItem(k));
     go('auth');
   });
 }
