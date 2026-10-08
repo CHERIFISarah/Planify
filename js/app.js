@@ -1111,6 +1111,8 @@ function scheduleWaterReminders() {
 
 // Rappels événements (15 min avant)
 function scheduleEventReminders() {
+  const cfg = LS.cfg();
+  if (cfg.notifEvents === false) return;
   const td  = today();
   const evs = [...LS.events(), ...LS.ics()].filter(e => e.date === td && e.startTime);
   const now = new Date();
