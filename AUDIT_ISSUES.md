@@ -12,7 +12,7 @@ Légende statut : 🔴 À faire · 🟡 En cours · 🟢 Corrigé · ⚪ Pas un 
 - [x] Correction de 2 "petits blocages" dans Notes (notes vides fantômes, crash taille de texte)
 - [x] Audit complet du reste de l'app (calendar, dashboard, grades, settings, shopping, tasks, wellness, luna, app.js)
 - [x] Corrections des 11 problèmes trouvés par cet audit (#8 à #18, voir ci-dessous)
-- [ ] Agent de test (vérifie que tout fonctionne réellement dans le navigateur) — **en cours**
+- [x] Agent de test (vérifie que tout fonctionne réellement dans le navigateur) — 1 bug critique trouvé et corrigé (modale tableau invisible, z-index)
 - [x] Agent de contrôle (relit l'ensemble des corrections) — 1 régression trouvée et corrigée (réglage "Notifications d'événements" devenu mort)
 
 ### Décision à prendre
@@ -75,3 +75,43 @@ Relecture indépendante de `git diff 293cb50..HEAD` (les deux commits de correct
 | `js/app.js` | Liste blanche du routeur hash complétée (`grades`,`shopping`,`luna`,`settings`) ; `signOutUser()` réutilise `ALL_DATA_KEYS`, identique à l'ancienne liste manuelle (vérifié clé par clé, rien oublié ni ajouté en trop). `clearICS()` reste l'unique définition, toujours appelée correctement depuis `settings.js` et `calendar.js`. Aucun problème trouvé. | — | ⚪ Aucun problème |
 
 **Conclusion** : un seul problème net (régression fonctionnelle, pas de crash) trouvé — le réglage "Notifications d'événements" devenu inopérant après la suppression du doublon dans `calendar.js`. **Corrigé** (voir tableau ci-dessus). Tout le reste du diff de session est cohérent, sans erreur de syntaxe (confirmé par `node --check`), sans référence orpheline, et sans effet de bord non voulu.
+
+## Tests — agent testeur (navigateur réel)
+
+Tests exécutés dans un vrai navigateur (Chromium via Playwright), sur l'app servie localement (`python3 -m http.server`), avec le SDK Firebase entièrement stubé côté client (`window.firebase.auth()`/`.firestore()` remplacés par de faux objets avant chargement, requêtes réseau vers `*firebase*`/`*gstatic*`/`*googleapis*` bloquées) pour simuler un utilisateur déjà connecté **sans aucun appel réseau réel ni écriture sur le projet Firebase de production**. Toute la console (`console.error`) et les exceptions JS non interceptées (`pageerror`) ont été capturées à chaque étape.
+
+### ✅ Fonctionne correctement
+
+- Contournement Firebase local : l'app affiche bien le dashboard directement (plus de blocage sur l'écran de login), aucune note vide ("onboarding" sauté via `pl_cfg` pré-rempli).
+- Navigation entre tous les onglets (Accueil, Notes, Agenda, Bien-être, Tâches, Moyennes, Luna IA) et vers Courses (depuis Tâches) : aucune erreur console à chaque changement de vue.
+- **Notes** : création d'un sujet, ouverture de l'éditeur, saisie titre + contenu.
+- **Bug #6 (notes fantômes) confirmé corrigé** : ouvrir une note puis revenir en arrière sans rien écrire ne laisse aucune note vide dans la liste (`noteCount=0` après coup).
+- **Insertion d'image** : un vrai `<img class="note-img">` est bien inséré dans `#e-content` via le sélecteur de fichier (testé avec un petit PNG).
+- **Bug #7 (`fmtSize` plantait sur sélection multi-éléments) confirmé corrigé** : sélection couvrant du texte en gras + texte normal, `fmtSize('24px')` ne lève plus d'exception et enveloppe correctement le contenu via le repli `extractContents()`/`insertNode()`.
+- **Insertion de tableau (logique JS)** : `doInsertTable()` insère bien un vrai `<table>` avec le bon nombre de lignes/colonnes (testé 3×3 → `tables=1 rows=3 cols=3`) et la note se sauvegarde correctement avec titre + contenu + tableau + image.
+- **Tâches** : création d'une liste, ajout rapide via le champ "quick-task-in" → la tâche apparaît avec le texte exact saisi.
+- **Luna — ajout de tâche par regex confirmé corrigé (bug #8/#9)** : message "ajoute acheter du pain à mes tâches" → la tâche apparaît dans l'onglet Tâches avec le texte **"Acheter du pain"** (non vide, bien capitalisé), confirmant que le schéma `text`/`due`/`listId`/`note` est maintenant utilisé de bout en bout.
+- **Réglages** : `exportData()` déclenche un téléchargement sans erreur JS ; `resetAll()` (avec Firebase stubé, donc `FB.deleteAll` ne fait rien côté réseau) s'exécute sans erreur JS et retourne au dashboard.
+- **Moyennes** : navigation sans erreur ; `exportGradesCSV()` déclenche un téléchargement sans erreur JS.
+
+### ❌ Problème trouvé (nouveau, hors liste d'origine)
+
+- **Modale "Insérer un tableau" invisible et non cliquable par-dessus l'éditeur de note** (et plus généralement **toute modale `openModal()` ouverte pendant que l'éditeur de note est actif**, p. ex. en cliquant sur le bouton "⊞ Tableau" de la barre d'outils) :
+  - `#editor-overlay` a `z-index:300` (`css/main.css:494`) alors que `#modal-wrap` a `z-index:200` (`css/main.css:562`). L'éditeur ayant un fond opaque et couvrant tout le viewport (`position:fixed;inset:0`), la modale de configuration du tableau (colonnes/lignes/couleurs/taille) s'ouvre bien dans le DOM (`#modal-wrap` reçoit la classe `.open`) mais est **rendue entièrement sous l'éditeur, donc invisible et impossible à cliquer**.
+  - Confirmé par : capture d'écran (le clic sur "⊞" n'affiche visuellement rien de nouveau), message Playwright *"`<div class="ed-body">…</div>` from `<div class="open" id="editor-overlay">…</div>` subtree intercepts pointer events"*, timeout de clic réel (3 s), et lecture des `z-index` calculés (`editor-overlay=300` vs `modal-wrap=200`).
+  - **Impact utilisateur réel** : en l'état, cliquer sur "⊞ Insérer un tableau" (ou tout autre bouton de la barre d'outils qui ouvrirait une modale, à vérifier) depuis l'éditeur de note ne fait **rien visuellement** dans un vrai navigateur — la fonctionnalité "tableau" reste donc **en pratique cassée pour l'utilisateur final**, même si le correctif du bug #5 (dédoublonnage JS) et la fonction `doInsertTable()` elle-même sont corrects (vérifié en l'appelant directement en JS : insertion correcte d'un tableau 3×3).
+  - Fichier : `css/main.css` (lignes 494 et 562).
+  - **🟢 Corrigé** : `#modal-wrap` passé à `z-index:400` (au-dessus des 300 de `#editor-overlay`). Toute modale ouverte depuis l'éditeur de note (tableau inclus) s'affiche désormais par-dessus, cliquable normalement.
+
+### ⚠️ Non testé (hors périmètre de ce passage)
+
+- Mode Gemini/Claude de Luna (nécessite une vraie clé API).
+- Connexion/synchronisation Firestore réelle multi-appareils (volontairement évitée pour ne pas toucher au projet Firebase de production).
+- Connexion Google (`signInWithRedirect`/popup) et flux d'authentification par email (création de compte, vérification d'email, mot de passe oublié) — seul l'état "déjà connecté" a été simulé.
+- Création d'événement dans l'Agenda, interactions Bien-être (humeur, habitudes, cycle), ajout/suppression d'articles dans Courses — seule la navigation vers ces onglets a été vérifiée, pas les actions internes.
+- Export PDF d'une note (`exportNotePDF`) et import JSON (`importData`).
+- Double notification d'événement agenda corrigée (#13) et réglage "Notifications d'événements" (issue de contrôle qualité ci-dessus) — nécessiteraient de programmer un vrai événement et d'attendre/avancer le temps, hors périmètre d'un test rapide.
+- Mode sombre, taille de police, micro Luna, comportement hors-ligne du Service Worker.
+- Rendu mobile réel (testé uniquement en résolution desktop par défaut dans Chromium headless).
+
+**Conclusion** : les corrections listées dans ce document (#2 à #18, notamment #5/#6/#7/#8/#9) fonctionnent bien **au niveau logique/JS** une fois exercées dans un vrai navigateur, aucune n'a introduit d'erreur console ou d'exception. Le bug CSS (z-index) découvert par ce test, qui rendait la modale d'insertion de tableau invisible par-dessus l'éditeur, a été corrigé dans la foulée — voir ci-dessus.
